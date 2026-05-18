@@ -26,6 +26,7 @@ const state = {
   dashboardSection: "days",
   sportTab: "proves",
   speedPhase: "qualifications",
+  modalTeamId: null,
   randomOrder: false,
   filters: {
     yearId: "",
@@ -68,7 +69,9 @@ function loadDb() {
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      return migrateDb(parsed);
+      const migrated = migrateDb(parsed);
+      localStorage.setItem(DB_KEY, JSON.stringify(migrated));
+      return migrated;
     } catch {
       localStorage.removeItem(DB_KEY);
     }
@@ -89,6 +92,9 @@ function loadDb() {
 
 function emptyDb() {
   return {
+    meta: {
+      participantsScopedBySport: true
+    },
     users: [],
     sportsDays: [],
     sports: [],
@@ -104,12 +110,20 @@ function emptyDb() {
 
 function migrateDb(source) {
   const base = emptyDb();
-  const merged = { ...base, ...source };
+  const merged = { ...base, ...source, meta: { ...base.meta, ...(source.meta || {}) } };
   merged.sports.forEach((sport) => {
     sport.name = normalizeSportName(sport.name);
     sport.attempts = Number(sport.attempts || 1);
     sport.finalists = Number(sport.finalists || 6);
   });
+  if (!source.meta?.participantsScopedBySport || merged.participants.some((participant) => !participant.sportId)) {
+    merged.participants = [];
+    merged.relayTeams = [];
+    merged.results = [];
+    merged.attempts = [];
+    merged.rankings = [];
+  }
+  merged.meta.participantsScopedBySport = true;
   return merged;
 }
 
@@ -444,6 +458,7 @@ function renderDayCard(day) {
 function renderDay() {
   const day = getDay(state.selectedDayId);
   const sports = db.sports.filter((sport) => sport.dayId === day.id);
+  const sportWidgets = getDaySportWidgets(sports);
   return `
     <section class="panel">
       <div class="section-head">
@@ -467,15 +482,85 @@ function renderDay() {
       </div>
       ${sports.length ? `
         <div class="grid">
-          ${sports.map((sport) => `
-            <article class="card sport-card">
-              <h3>${displaySportName(sport.name)}</h3>
-              <p class="muted">${sport.name === "Velocita" ? `${sport.finalists} finalisti` : `${sport.attempts} prove/tentativi`}</p>
-              <button class="btn" data-action="open-sport" data-sport-id="${sport.id}">Apri sport</button>
-            </article>
-          `).join("")}
+          ${sportWidgets.map(renderSportDayCard).join("")}
         </div>
       ` : `<div class="empty">Configura almeno uno sport per questa giornata.</div>`}
+    </section>
+    ${sports.length ? renderIncompleteSummary(day, sportWidgets) : ""}
+  `;
+}
+
+function getDaySportWidgets(sports) {
+  return sports.flatMap((sport) => {
+    if (sport.name !== "Velocita") return [{ sport, label: displaySportName(sport.name), phase: null }];
+    return [
+      { sport, label: "Velocita Qualifiche", phase: "qualifications" },
+      { sport, label: "Velocita Finali", phase: "finals" }
+    ];
+  });
+}
+
+function renderSportDayCard(widget) {
+  const progress = getSportProgress(widget.sport, widget.phase);
+  const percent = progress.total ? Math.round((progress.completed / progress.total) * 100) : 0;
+  return `
+    <article class="card sport-card">
+      <h3>${escapeHtml(widget.label)}</h3>
+      <div class="progress-block" aria-label="Avanzamento ${escapeHtml(widget.label)} ${progress.completed} su ${progress.total}">
+        <div class="progress-meta">
+          <span>Prove svolte</span>
+          <strong>${progress.completed}/${progress.total}</strong>
+        </div>
+        <div class="progress-track">
+          <span class="progress-fill" style="width: ${percent}%"></span>
+        </div>
+      </div>
+      <button class="btn" data-action="open-sport" data-sport-id="${widget.sport.id}" ${widget.phase ? `data-speed-phase="${widget.phase}"` : ""}>Apri sport</button>
+    </article>
+  `;
+}
+
+function renderIncompleteSummary(day, sportWidgets) {
+  return `
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Avanzamento sezioni</p>
+          <h2>Prove da completare</h2>
+        </div>
+      </div>
+      <div class="incomplete-grid">
+        ${sportWidgets.map((widget) => renderSportIncompleteTable(day, widget)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderSportIncompleteTable(day, widget) {
+  const rows = getIncompleteSectionRows(day.id, widget.sport, widget.phase);
+  return `
+    <section class="sport-summary">
+      <div class="row-head compact">
+        <h3>${escapeHtml(widget.label)}</h3>
+      </div>
+      <div class="table-wrap">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th>Anno e sezione</th>
+              <th>Contatore</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.length ? rows.map((row) => `
+              <tr>
+                <td>${escapeHtml(row.year)} ${escapeHtml(row.section)}</td>
+                <td><span class="pill">${row.incomplete}</span></td>
+              </tr>
+            `).join("") : `<tr><td colspan="2" class="muted">Nessuna sezione configurata.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
     </section>
   `;
 }
@@ -590,6 +675,7 @@ function renderSportConfig(dayId, sportName) {
 function renderYearConfig(year) {
   const sections = getSections(year.id);
   const canDeleteYear = sections.length === 0;
+  const sports = db.sports.filter((sport) => sport.dayId === year.dayId);
   return `
     <div class="year-card">
       <div class="year-table-head">
@@ -605,18 +691,18 @@ function renderYearConfig(year) {
           <thead>
             <tr>
               <th>Sezione</th>
-              <th>Studenti</th>
+              ${sports.map((sport) => `<th>${displaySportName(sport.name)}</th>`).join("")}
               <th>Azioni</th>
             </tr>
           </thead>
           <tbody>
-            ${sections.map((section) => renderSectionRow(section)).join("") || `
+            ${sections.map((section) => renderSectionRow(section, sports)).join("") || `
               <tr>
-                <td colspan="3" class="muted">Nessuna sezione per questo anno.</td>
+                <td colspan="${sports.length + 2}" class="muted">Nessuna sezione per questo anno.</td>
               </tr>
             `}
             <tr class="create-row">
-              <td colspan="3">
+              <td colspan="${sports.length + 2}">
                 <form class="inline add-section-form" data-action="add-section" data-year-id="${year.id}">
                   <div class="field">
                     <label>Nuova sezione</label>
@@ -633,13 +719,13 @@ function renderYearConfig(year) {
   `;
 }
 
-function renderSectionRow(section) {
-  const studentCount = db.participants.filter((participant) => participant.sectionId === section.id).length;
+function renderSectionRow(section, sports) {
+  const studentCount = countParticipants({ sectionId: section.id });
   const canDeleteSection = studentCount === 0;
   return `
     <tr>
       <td><input value="${escapeHtml(section.label)}" data-action="update-section" data-section-id="${section.id}"></td>
-      <td><span class="pill">${studentCount}</span></td>
+      ${sports.map((sport) => `<td><span class="pill">${countParticipants({ sectionId: section.id, sportId: sport.id })}</span></td>`).join("")}
       <td>
         <button class="btn danger tiny" data-action="delete-section" data-section-id="${section.id}" ${canDeleteSection ? "" : "disabled"} title="${canDeleteSection ? "Elimina sezione" : "Non puoi eliminare una sezione con studenti"}">Elimina</button>
       </td>
@@ -651,12 +737,15 @@ function renderSport() {
   const day = getDay(state.selectedDayId);
   const sport = getSport(state.selectedSportId);
   const activeTab = isGuest() ? "rankings" : state.sportTab;
+  const sportTitle = sport.name === "Velocita"
+    ? `Velocita ${state.speedPhase === "finals" ? "Finali" : "Qualifiche"}`
+    : displaySportName(sport.name);
   return `
     <section class="panel">
       <div class="section-head">
         <div>
           <p class="eyebrow">${escapeHtml(day.title)}</p>
-          <h2>${displaySportName(sport.name)}</h2>
+          <h2>${escapeHtml(sportTitle)}</h2>
         </div>
         <button class="btn secondary" data-action="back-day">Sport della giornata</button>
       </div>
@@ -673,7 +762,7 @@ function renderProves(sport) {
   if (isGuest()) return renderRankings(sport);
   if (!canEditResults()) return `<div class="empty">Non hai i permessi per modificare prove o partecipanti.</div>`;
   if (sport.name === "Staffetta") return renderRelayProves(sport);
-  if (sport.name === "Velocita") return renderSpeedProves(sport);
+  if (sport.name === "Velocita") return state.speedPhase === "finals" ? renderSpeedFinals(sport) : renderStandardProves(sport, "qualification");
   return renderStandardProves(sport, "standard");
 }
 
@@ -784,85 +873,182 @@ function renderRelayProves(sport) {
   const years = getYears(state.selectedDayId);
   if (!years.length) return `<div class="empty">Configura anni e sezioni prima di inserire squadre.</div>`;
   ensureValidFilter(years, true);
+  if (!state.filters.sectionId) return `<div>${renderContextSelectors(true)}<div class="empty">Aggiungi almeno una sezione per l'anno selezionato.</div></div>`;
   const teams = db.relayTeams
     .filter((team) => team.dayId === state.selectedDayId && team.sportId === sport.id && team.yearId === state.filters.yearId && team.sectionId === state.filters.sectionId && team.sex === state.filters.sex)
     .sort((a, b) => a.name.localeCompare(b.name));
   const pool = getParticipantsForContext();
   return `
     ${renderContextSelectors(true)}
-    <div class="grid">
-      <div class="panel">
-        <div class="row-head">
-          <h3>Partecipanti disponibili</h3>
+    <section class="panel" id="relay-participants" style="margin-bottom: 16px;">
+      <div class="row-head">
+        <div>
+          <h3>Partecipanti staffetta</h3>
+          <p class="fineprint">Gli iscritti sono specifici per Staffetta, anno, sezione e sesso selezionati.</p>
         </div>
-        <form class="inline" data-action="add-participant">
-          <div class="field">
-            <label>Nome</label>
-            <input name="firstName" required>
-          </div>
-          <div class="field">
-            <label>Cognome</label>
-            <input name="lastName" required>
-          </div>
-          <button class="btn" type="submit">Aggiungi</button>
-        </form>
-        <div class="list" style="margin-top: 12px;">
-          ${pool.map((participant) => `<span class="chip">${escapeHtml(participant.lastName)} ${escapeHtml(participant.firstName)}</span>`).join("") || `<span class="muted">Nessun partecipante disponibile.</span>`}
-        </div>
+        <button class="btn secondary tiny" data-action="toggle-random">${state.randomOrder ? "Ordina per cognome" : "Ordine casuale"}</button>
       </div>
-      <div class="panel">
-        <div class="row-head">
-          <h3>Squadre</h3>
+      <form class="inline" data-action="add-participant">
+        <div class="field">
+          <label>Nome</label>
+          <input name="firstName" required>
         </div>
-        <form class="inline" data-action="add-team" data-sport-id="${sport.id}">
-          <div class="field">
-            <label>Nome o numero squadra</label>
-            <input name="name" placeholder="Squadra 1" required>
-          </div>
-          <button class="btn" type="submit">Crea squadra</button>
-        </form>
+        <div class="field">
+          <label>Cognome</label>
+          <input name="lastName" required>
+        </div>
+        <button class="btn" type="submit">Aggiungi partecipante</button>
+      </form>
+      ${pool.length ? renderRelayParticipantTable(pool) : `<div class="empty" style="margin-top: 14px;">Nessun partecipante iscritto alla staffetta in questo contesto.</div>`}
+    </section>
+    <section class="panel">
+      <div class="row-head">
+        <div>
+          <h3>Squadre e risultati</h3>
+          <p class="fineprint">I partecipanti delle squadre si modificano dal pulsante su ogni riga.</p>
+        </div>
+        <button class="btn secondary tiny" data-action="scroll-relay-participants">Vai ai partecipanti</button>
       </div>
-    </div>
-    <div class="grid" style="margin-top: 16px;">
-      ${teams.map((team) => renderTeamCard(team, pool)).join("") || `<div class="empty">Nessuna squadra creata.</div>`}
+      <form class="inline" data-action="add-team" data-sport-id="${sport.id}" style="margin-bottom: 14px;">
+        <div class="field">
+          <label>Nome o numero squadra</label>
+          <input name="name" placeholder="Squadra 1" required>
+        </div>
+        <button class="btn" type="submit">Aggiungi squadra</button>
+      </form>
+      ${teams.length ? renderRelayTeamsTable(teams, pool) : `<div class="empty">Nessuna squadra creata.</div>`}
+    </section>
+    ${state.modalTeamId ? renderTeamModal(state.modalTeamId, pool) : ""}
+  `;
+}
+
+function renderRelayParticipantTable(participants) {
+  const ordered = orderParticipants(participants);
+  return `
+    <div class="table-wrap" style="margin-top: 14px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Cognome</th>
+            <th>Nome</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ordered.map((participant) => `
+            <tr>
+              <td><input value="${escapeHtml(participant.lastName)}" data-action="update-participant" data-field="lastName" data-participant-id="${participant.id}"></td>
+              <td><input value="${escapeHtml(participant.firstName)}" data-action="update-participant" data-field="firstName" data-participant-id="${participant.id}"></td>
+              <td><button class="btn danger tiny" data-action="delete-participant" data-participant-id="${participant.id}">Elimina</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
     </div>
   `;
 }
 
-function renderTeamCard(team, pool) {
+function renderRelayTeamsTable(teams, pool) {
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Squadra</th>
+            <th>Partecipanti</th>
+            <th>Risultato</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${teams.map((team) => renderTeamRow(team, pool)).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderTeamRow(team, pool) {
   const result = getTeamResult(team.id);
   const status = result?.status || "value";
+  const members = team.participantIds
+    .map((participantId) => pool.find((participant) => participant.id === participantId))
+    .filter(Boolean)
+    .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
   return `
-    <article class="team-card">
-      <div class="inline" style="justify-content: space-between; align-items: center;">
-        <input value="${escapeHtml(team.name)}" data-action="update-team-name" data-team-id="${team.id}">
-        <button class="btn danger tiny" data-action="delete-team" data-team-id="${team.id}">Elimina</button>
-      </div>
-      <div class="attempt-cell">
-        <select data-action="update-team-status" data-team-id="${team.id}">
-          ${RESULT_STATES.map((item) => `<option value="${item.value}" ${item.value === status ? "selected" : ""}>${item.label}</option>`).join("")}
-        </select>
-        <input type="number" step="0.01" placeholder="Tempo" value="${escapeHtml(result?.value ?? "")}" ${status === "value" ? "" : "disabled"} data-action="update-team-value" data-team-id="${team.id}">
-      </div>
-      <div class="check-grid">
-        ${pool.map((participant) => `
-          <label class="check-item">
-            <input type="checkbox" data-action="toggle-team-participant" data-team-id="${team.id}" data-participant-id="${participant.id}" ${team.participantIds.includes(participant.id) ? "checked" : ""}>
-            ${escapeHtml(participant.lastName)} ${escapeHtml(participant.firstName)}
-          </label>
-        `).join("") || `<span class="muted">Aggiungi partecipanti nel contesto corrente.</span>`}
-      </div>
-    </article>
+    <tr>
+      <td><input value="${escapeHtml(team.name)}" data-action="update-team-name" data-team-id="${team.id}"></td>
+      <td>${members.map((participant) => `<span class="chip">${escapeHtml(participant.lastName)} ${escapeHtml(participant.firstName)}</span>`).join(" ") || `<span class="muted">Nessun partecipante assegnato</span>`}</td>
+      <td>
+        <div class="attempt-cell">
+          <select data-action="update-team-status" data-team-id="${team.id}">
+            ${RESULT_STATES.map((item) => `<option value="${item.value}" ${item.value === status ? "selected" : ""}>${item.label}</option>`).join("")}
+          </select>
+          <input type="number" step="0.01" placeholder="Tempo" value="${escapeHtml(result?.value ?? "")}" ${status === "value" ? "" : "disabled"} data-action="update-team-value" data-team-id="${team.id}">
+        </div>
+      </td>
+      <td>
+        <div class="card-actions">
+          <button class="btn secondary tiny" data-action="open-team-modal" data-team-id="${team.id}">Modifica squadra</button>
+          <button class="btn danger tiny" data-action="delete-team" data-team-id="${team.id}">Elimina</button>
+        </div>
+      </td>
+    </tr>
   `;
 }
 
-function renderSpeedProves(sport) {
+function renderTeamModal(teamId, pool) {
+  const team = db.relayTeams.find((item) => item.id === teamId);
+  if (!team) return "";
+  const teamsInContext = db.relayTeams.filter((item) =>
+    item.id !== team.id &&
+    item.dayId === team.dayId &&
+    item.sportId === team.sportId &&
+    item.yearId === team.yearId &&
+    item.sectionId === team.sectionId &&
+    item.sex === team.sex
+  );
+  const busyParticipantIds = new Set(teamsInContext.flatMap((item) => item.participantIds));
+  const eligible = pool.filter((participant) => team.participantIds.includes(participant.id) || !busyParticipantIds.has(participant.id));
   return `
-    <div class="tabs">
-      <button class="tab ${state.speedPhase === "qualifications" ? "active" : ""}" data-action="speed-phase" data-phase="qualifications">Qualifiche</button>
-      <button class="tab ${state.speedPhase === "finals" ? "active" : ""}" data-action="speed-phase" data-phase="finals">Finali</button>
+    <div class="modal-backdrop" data-action="close-team-modal">
+      <section class="modal team-modal" role="dialog" aria-modal="true" aria-label="Modifica squadra" data-modal-panel>
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Staffetta</p>
+            <h2>${escapeHtml(team.name)}</h2>
+            <p class="fineprint">Sono disponibili solo gli studenti non assegnati ad altre squadre dello stesso contesto.</p>
+          </div>
+          <button class="icon-btn" title="Chiudi" data-action="close-team-modal">×</button>
+        </div>
+        ${eligible.length ? `
+          <div class="table-wrap">
+            <table class="team-picker-table">
+              <thead>
+                <tr>
+                  <th>In squadra</th>
+                  <th>Cognome</th>
+                  <th>Nome</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${eligible
+                  .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName))
+                  .map((participant) => `
+                    <tr>
+                      <td>
+                        <input type="checkbox" aria-label="Assegna ${escapeHtml(participant.lastName)} ${escapeHtml(participant.firstName)}" data-action="toggle-team-participant" data-team-id="${team.id}" data-participant-id="${participant.id}" ${team.participantIds.includes(participant.id) ? "checked" : ""}>
+                      </td>
+                      <td>${escapeHtml(participant.lastName)}</td>
+                      <td>${escapeHtml(participant.firstName)}</td>
+                    </tr>
+                  `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : `<div class="empty">Nessuno studente disponibile. Aggiungi prima partecipanti alla staffetta.</div>`}
+      </section>
     </div>
-    ${state.speedPhase === "qualifications" ? renderStandardProves(sport, "qualification") : renderSpeedFinals(sport)}
   `;
 }
 
@@ -873,13 +1059,6 @@ function renderSpeedFinals(sport) {
   const finalists = getSpeedFinalists(sport, state.filters.yearId, state.filters.sex);
   return `
     ${renderContextSelectors(false)}
-    <div class="panel" style="margin-bottom: 16px;">
-      <div class="row-head">
-        <h3>Finalisti automatici</h3>
-        <span class="status-pill">${sport.finalists} posti configurati</span>
-      </div>
-      <p class="fineprint">Le sezioni sono accorpate. Gli atleti sono selezionati dai migliori tempi di qualifica.</p>
-    </div>
     ${finalists.length ? `
       <div class="table-wrap">
         <table>
@@ -922,8 +1101,9 @@ function renderRankings(sport) {
   const years = getYears(state.selectedDayId);
   if (!years.length) return `<div class="empty">Nessun anno configurato.</div>`;
   ensureValidFilter(years, false);
-  const rows = computeRanking(sport, state.filters.yearId, state.filters.sex);
-  persistRanking(sport, state.filters.yearId, state.filters.sex, rows);
+  const rankingPhase = sport.name === "Velocita" ? state.speedPhase : null;
+  const rows = computeRanking(sport, state.filters.yearId, state.filters.sex, rankingPhase);
+  persistRanking(sport, state.filters.yearId, state.filters.sex, rows, rankingPhase);
   return `
     ${renderContextSelectors(false)}
     <div class="table-wrap">
@@ -975,6 +1155,122 @@ function getSections(yearId) {
 
 function getSection(sectionId) {
   return db.sections.find((section) => section.id === sectionId);
+}
+
+function countParticipants({ dayId = state.selectedDayId, sportId, yearId, sectionId, sex } = {}) {
+  return db.participants.filter((participant) =>
+    (!dayId || participant.dayId === dayId) &&
+    (!sportId || participant.sportId === sportId) &&
+    (!yearId || participant.yearId === yearId) &&
+    (!sectionId || participant.sectionId === sectionId) &&
+    (!sex || participant.sex === sex)
+  ).length;
+}
+
+function getSportParticipants(sport) {
+  return db.participants.filter((participant) =>
+    participant.dayId === sport.dayId &&
+    participant.sportId === sport.id
+  );
+}
+
+function isAttemptComplete(attempt) {
+  if (!attempt) return false;
+  if (attempt.status === "retired" || attempt.status === "disqualified") return true;
+  return attempt.status === "value" && attempt.value !== "";
+}
+
+function isResultComplete(result) {
+  if (!result) return false;
+  if (result.status === "retired" || result.status === "disqualified") return true;
+  return result.status === "value" && result.value !== "";
+}
+
+function getCompletionPhase(sport) {
+  return sport.name === "Velocita" ? "qualification" : "standard";
+}
+
+function isParticipantSportComplete(participant, sport, phase = getCompletionPhase(sport)) {
+  return Array.from({ length: sport.attempts }, (_, index) =>
+    isAttemptComplete(getAttempt(sport.id, participant.id, phase, index + 1))
+  ).every(Boolean);
+}
+
+function getRelayTeamsForSport(sport) {
+  return db.relayTeams.filter((team) => team.dayId === sport.dayId && team.sportId === sport.id);
+}
+
+function getSpeedFinalistParticipants(sport) {
+  return getYears(sport.dayId).flatMap((year) =>
+    SEXES.flatMap((sex) => getSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant))
+  );
+}
+
+function isSpeedFinalComplete(participant, sport) {
+  return isResultComplete(getFinalResult(sport.id, participant.id));
+}
+
+function getSportProgress(sport, phase = null) {
+  if (sport.name === "Staffetta") {
+    const teams = getRelayTeamsForSport(sport);
+    return {
+      total: teams.length,
+      completed: teams.filter((team) => isResultComplete(getTeamResult(team.id))).length
+    };
+  }
+
+  if (sport.name === "Velocita" && phase === "finals") {
+    const finalists = getSpeedFinalistParticipants(sport);
+    return {
+      total: finalists.length,
+      completed: finalists.filter((participant) => isSpeedFinalComplete(participant, sport)).length
+    };
+  }
+
+  const participants = getSportParticipants(sport);
+  return {
+    total: participants.length,
+    completed: participants.filter((participant) => isParticipantSportComplete(participant, sport, sport.name === "Velocita" ? "qualification" : "standard")).length
+  };
+}
+
+function getIncompleteSectionRows(dayId, sport, phase = null) {
+  return getYears(dayId).flatMap((year) =>
+    getSections(year.id).map((section) => {
+      if (sport.name === "Staffetta") {
+        const teams = db.relayTeams.filter((team) =>
+          team.dayId === dayId &&
+          team.sportId === sport.id &&
+          team.yearId === year.id &&
+          team.sectionId === section.id
+        );
+        return {
+          year: year.label,
+          section: section.label,
+          incomplete: teams.filter((team) => !isResultComplete(getTeamResult(team.id))).length
+        };
+      }
+
+      const participants = sport.name === "Velocita" && phase === "finals"
+        ? SEXES.flatMap((sex) => getSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant))
+          .filter((participant) => participant.sectionId === section.id)
+        : db.participants.filter((participant) =>
+          participant.dayId === dayId &&
+          participant.sportId === sport.id &&
+          participant.yearId === year.id &&
+          participant.sectionId === section.id
+        );
+      const completionPhase = sport.name === "Velocita" ? "qualification" : "standard";
+      return {
+        year: year.label,
+        section: section.label,
+        incomplete: participants.filter((participant) => sport.name === "Velocita" && phase === "finals"
+          ? !isSpeedFinalComplete(participant, sport)
+          : !isParticipantSportComplete(participant, sport, completionPhase)
+        ).length
+      };
+    })
+  );
 }
 
 function getParticipantsForContext() {
@@ -1130,17 +1426,34 @@ function bestParticipantResult(sport, participant, phase) {
 
 function getSpeedFinalists(sport, yearId, sex) {
   return db.participants
-    .filter((participant) => participant.dayId === state.selectedDayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
+    .filter((participant) => participant.dayId === sport.dayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
     .map((participant) => ({ participant, best: bestParticipantResult(sport, participant, "qualification").value }))
     .filter((item) => Number.isFinite(item.best))
     .sort((a, b) => a.best - b.best || a.participant.lastName.localeCompare(b.participant.lastName))
     .slice(0, sport.finalists);
 }
 
-function computeRanking(sport, yearId, sex) {
+function computeRanking(sport, yearId, sex, phase = null) {
   if (sport.name === "Staffetta") return computeRelayRanking(sport, yearId, sex);
+  if (sport.name === "Velocita" && phase === "qualifications") return computeSpeedQualificationRanking(sport, yearId, sex);
   if (sport.name === "Velocita") return computeSpeedRanking(sport, yearId, sex);
   return computeStandardRanking(sport, yearId, sex);
+}
+
+function computeSpeedQualificationRanking(sport, yearId, sex) {
+  const rows = db.participants
+    .filter((participant) => participant.dayId === sport.dayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
+    .map((participant) => {
+      const best = bestParticipantResult(sport, participant, "qualification");
+      return {
+        id: participant.id,
+        name: `${participant.lastName} ${participant.firstName}`,
+        section: getSection(participant.sectionId)?.label || "",
+        raw: best.value,
+        status: best.status
+      };
+    });
+  return rankRows(rows, "asc", "time");
 }
 
 function computeStandardRanking(sport, yearId, sex) {
@@ -1237,12 +1550,19 @@ function presentRankRow(row, position, kind) {
   };
 }
 
-function persistRanking(sport, yearId, sex, rows) {
-  db.rankings = db.rankings.filter((ranking) => !(ranking.dayId === state.selectedDayId && ranking.sportId === sport.id && ranking.yearId === yearId && ranking.sex === sex));
+function persistRanking(sport, yearId, sex, rows, phase = null) {
+  db.rankings = db.rankings.filter((ranking) => !(
+    ranking.dayId === state.selectedDayId &&
+    ranking.sportId === sport.id &&
+    ranking.yearId === yearId &&
+    ranking.sex === sex &&
+    (ranking.phase || null) === phase
+  ));
   db.rankings.push({
     id: id("ranking"),
     dayId: state.selectedDayId,
     sportId: sport.id,
+    phase,
     yearId,
     sex,
     rows,
@@ -1437,6 +1757,7 @@ app.addEventListener("click", (event) => {
 
   if (action === "go-dashboard") {
     state.view = "dashboard";
+    state.modalTeamId = null;
     render();
   }
 
@@ -1452,6 +1773,7 @@ app.addEventListener("click", (event) => {
   if (action === "open-day") {
     state.selectedDayId = target.dataset.dayId;
     state.view = "day";
+    state.modalTeamId = null;
     resetFilters();
     render();
   }
@@ -1459,6 +1781,7 @@ app.addEventListener("click", (event) => {
   if (action === "edit-day" && canAdmin()) {
     state.selectedDayId = target.dataset.dayId;
     state.view = "day-edit";
+    state.modalTeamId = null;
     resetFilters();
     render();
   }
@@ -1467,28 +1790,41 @@ app.addEventListener("click", (event) => {
     state.selectedSportId = target.dataset.sportId;
     state.view = "sport";
     state.sportTab = isGuest() ? "rankings" : "proves";
-    state.speedPhase = "qualifications";
+    state.speedPhase = target.dataset.speedPhase || "qualifications";
+    state.modalTeamId = null;
     resetFilters();
     render();
   }
 
   if (action === "back-day") {
     state.view = "day";
+    state.modalTeamId = null;
     render();
   }
 
   if (action === "sport-tab") {
     state.sportTab = target.dataset.tab;
-    render();
-  }
-
-  if (action === "speed-phase") {
-    state.speedPhase = target.dataset.phase;
+    state.modalTeamId = null;
     render();
   }
 
   if (action === "toggle-random") {
     state.randomOrder = !state.randomOrder;
+    render();
+  }
+
+  if (action === "scroll-relay-participants") {
+    document.querySelector("#relay-participants")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (action === "open-team-modal" && canEditResults()) {
+    state.modalTeamId = target.dataset.teamId;
+    render();
+  }
+
+  if (action === "close-team-modal") {
+    if (event.target.closest("[data-modal-panel]") && !event.target.closest(".icon-btn")) return;
+    state.modalTeamId = null;
     render();
   }
 
@@ -1536,6 +1872,9 @@ app.addEventListener("click", (event) => {
 
   if (action === "delete-participant" && canEditResults()) {
     const participantId = target.dataset.participantId;
+    const participant = db.participants.find((item) => item.id === participantId);
+    const label = participant ? `${participant.firstName} ${participant.lastName}` : "questo studente";
+    if (!confirm(`Eliminare ${label} da questo sport?`)) return;
     db.participants = db.participants.filter((participant) => participant.id !== participantId);
     db.attempts = db.attempts.filter((attempt) => attempt.participantId !== participantId);
     db.results = db.results.filter((result) => result.targetId !== participantId);
@@ -1548,8 +1887,12 @@ app.addEventListener("click", (event) => {
 
   if (action === "delete-team" && canEditResults()) {
     const teamId = target.dataset.teamId;
+    const team = db.relayTeams.find((item) => item.id === teamId);
+    const label = team ? team.name : "questa squadra";
+    if (!confirm(`Eliminare ${label} dalla staffetta?`)) return;
     db.relayTeams = db.relayTeams.filter((team) => team.id !== teamId);
     db.results = db.results.filter((result) => result.targetId !== teamId);
+    if (state.modalTeamId === teamId) state.modalTeamId = null;
     saveDb();
     render();
   }
@@ -1572,16 +1915,19 @@ app.addEventListener("change", (event) => {
   if (action === "filter-year") {
     state.filters.yearId = target.value;
     state.filters.sectionId = "";
+    state.modalTeamId = null;
     render();
   }
 
   if (action === "filter-section") {
     state.filters.sectionId = target.value;
+    state.modalTeamId = null;
     render();
   }
 
   if (action === "filter-sex") {
     state.filters.sex = target.value;
+    state.modalTeamId = null;
     render();
   }
 
@@ -1618,6 +1964,18 @@ app.addEventListener("change", (event) => {
   if (action === "toggle-team-participant" && canEditResults()) {
     const team = db.relayTeams.find((item) => item.id === target.dataset.teamId);
     if (target.checked && !team.participantIds.includes(target.dataset.participantId)) {
+      db.relayTeams
+        .filter((item) =>
+          item.id !== team.id &&
+          item.dayId === team.dayId &&
+          item.sportId === team.sportId &&
+          item.yearId === team.yearId &&
+          item.sectionId === team.sectionId &&
+          item.sex === team.sex
+        )
+        .forEach((item) => {
+          item.participantIds = item.participantIds.filter((id) => id !== target.dataset.participantId);
+        });
       team.participantIds.push(target.dataset.participantId);
     }
     if (!target.checked) {

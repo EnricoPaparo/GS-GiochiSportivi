@@ -167,6 +167,23 @@ select:disabled {
   box-shadow: var(--shadow);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(4, 10, 16, 0.72);
+}
+
+.team-modal {
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+  padding: clamp(16px, 3vw, 24px);
+}
+
 .panel {
   padding: clamp(16px, 3vw, 24px);
 }
@@ -363,6 +380,40 @@ select:disabled {
 
 .sport-card {
   border-top: 4px solid var(--primary);
+}
+
+.progress-block {
+  display: grid;
+  gap: 8px;
+}
+
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.progress-meta strong {
+  color: var(--ink);
+}
+
+.progress-track {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--green));
 }
 
 .meta {
@@ -568,6 +619,27 @@ tr:last-child td {
   border-bottom: 0;
 }
 
+.incomplete-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.sport-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.compact-table {
+  min-width: 0;
+}
+
+.compact-table th:last-child,
+.compact-table td:last-child {
+  width: 120px;
+  white-space: nowrap;
+}
+
 .attempt-cell {
   display: grid;
   grid-template-columns: minmax(92px, 0.9fr) minmax(82px, 1fr);
@@ -681,12 +753,25 @@ tr:last-child td {
   padding: 9px;
 }
 
-.sections-table th:nth-child(2),
-.sections-table th:nth-child(3),
-.sections-table td:nth-child(2),
-.sections-table td:nth-child(3) {
+.sections-table th:not(:first-child),
+.sections-table td:not(:first-child) {
   width: 120px;
   white-space: nowrap;
+}
+
+.team-picker-table {
+  min-width: 0;
+}
+
+.team-picker-table th:first-child,
+.team-picker-table td:first-child {
+  width: 110px;
+  text-align: center;
+}
+
+.team-picker-table input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
 }
 
 .create-row td {
