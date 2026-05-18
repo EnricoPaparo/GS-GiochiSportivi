@@ -205,6 +205,105 @@ select:disabled {
   gap: 16px;
 }
 
+.dashboard-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.nav-tile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 94px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 0 1px 0 rgba(23, 32, 42, 0.03);
+}
+
+.nav-tile:hover,
+.nav-tile.active {
+  border-color: rgba(23, 107, 135, 0.48);
+  background: #f4fafb;
+}
+
+.nav-tile.active {
+  box-shadow: inset 0 0 0 2px rgba(23, 107, 135, 0.16);
+}
+
+.nav-tile strong,
+.nav-tile small {
+  display: block;
+}
+
+.nav-tile strong {
+  margin-bottom: 4px;
+  font-size: 1.02rem;
+}
+
+.nav-tile small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.tile-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: rgba(23, 107, 135, 0.12);
+}
+
+.calendar-icon::before {
+  content: "";
+  position: absolute;
+  inset: 11px 9px 8px;
+  border: 3px solid var(--primary);
+  border-top-width: 8px;
+  border-radius: 5px;
+}
+
+.calendar-icon::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  height: 3px;
+  background: var(--primary);
+  box-shadow: 0 7px 0 var(--primary);
+}
+
+.users-icon::before,
+.users-icon::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.users-icon::before {
+  width: 12px;
+  height: 12px;
+  left: 10px;
+  top: 11px;
+  box-shadow: 14px 0 0 var(--primary);
+}
+
+.users-icon::after {
+  width: 28px;
+  height: 12px;
+  left: 8px;
+  bottom: 10px;
+  border-radius: 12px 12px 5px 5px;
+}
+
 .card {
   display: grid;
   gap: 12px;
@@ -558,6 +657,10 @@ tr:last-child td {
   .row-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .dashboard-nav {
+    grid-template-columns: 1fr;
   }
 
   .btn,

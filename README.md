@@ -16,7 +16,7 @@ I dati vengono salvati nel `localStorage` del browser nella chiave `giornateSpor
 
 ## Funzionalita principali
 
-- Login, registrazione e accesso spettatore.
+- Login, accesso spettatore e sezione `Utenze` per creare, modificare ed eliminare utenti.
 - Ruoli `Administrator`, `Docente` e `Spettatore/Ospite`.
 - Creazione, modifica ed eliminazione delle giornate sportive per amministratori.
 - Configurazione di sport, prove, finalisti della velocita, anni e sezioni.

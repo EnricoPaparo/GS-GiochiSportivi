@@ -23,6 +23,7 @@ const state = {
   user: null,
   selectedDayId: null,
   selectedSportId: null,
+  dashboardSection: "days",
   sportTab: "proves",
   speedPhase: "qualifications",
   randomOrder: false,
@@ -217,40 +218,6 @@ function renderAuth() {
             <button class="btn" type="submit">Accedi</button>
           </div>
         </form>
-        <form class="panel" data-action="register">
-          <div class="section-head">
-            <h2>Registrazione</h2>
-          </div>
-          <div class="form-grid">
-            <div class="field">
-              <label for="reg-firstName">Nome</label>
-              <input id="reg-firstName" name="firstName" required>
-            </div>
-            <div class="field">
-              <label for="reg-lastName">Cognome</label>
-              <input id="reg-lastName" name="lastName" required>
-            </div>
-            <div class="field">
-              <label for="reg-username">Username</label>
-              <input id="reg-username" name="username" autocomplete="username" required>
-            </div>
-            <div class="field">
-              <label for="reg-password">Password</label>
-              <input id="reg-password" name="password" type="password" autocomplete="new-password" required>
-            </div>
-            <div class="field">
-              <label for="reg-role">Tipo utente</label>
-              <select id="reg-role" name="role">
-                <option>${ROLES.TEACHER}</option>
-                <option>${ROLES.ADMIN}</option>
-                <option>${ROLES.GUEST}</option>
-              </select>
-            </div>
-          </div>
-          <div class="inline" style="margin-top: 14px;">
-            <button class="btn" type="submit">Crea account</button>
-          </div>
-        </form>
       </section>
     </main>
   `;
@@ -273,12 +240,41 @@ function renderTopbar() {
 }
 
 function renderDashboard() {
+  const activeSection = canAdmin() ? state.dashboardSection : "days";
+  return `
+    ${canAdmin() ? renderDashboardNav(activeSection) : ""}
+    ${activeSection === "users" ? renderUsersSection() : renderDaysSection()}
+  `;
+}
+
+function renderDashboardNav(activeSection) {
+  return `
+    <section class="dashboard-nav">
+      <button class="nav-tile ${activeSection === "days" ? "active" : ""}" data-action="dashboard-section" data-section="days">
+        <span class="tile-icon calendar-icon" aria-hidden="true"></span>
+        <span>
+          <strong>Dashboard Giornate</strong>
+          <small>Giornate sportive, sport e configurazioni</small>
+        </span>
+      </button>
+      <button class="nav-tile ${activeSection === "users" ? "active" : ""}" data-action="dashboard-section" data-section="users">
+        <span class="tile-icon users-icon" aria-hidden="true"></span>
+        <span>
+          <strong>Utenze</strong>
+          <small>Creazione, modifica e cancellazione utenti</small>
+        </span>
+      </button>
+    </section>
+  `;
+}
+
+function renderDaysSection() {
   const days = [...db.sportsDays].sort((a, b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`));
   return `
     <section class="panel">
       <div class="section-head">
         <div>
-          <p class="eyebrow">Dashboard</p>
+          <p class="eyebrow">Dashboard Giornate</p>
           <h2>Giornate sportive</h2>
         </div>
         ${canAdmin() ? `<button class="btn" data-action="toggle-create-day">Nuova giornata</button>` : ""}
@@ -290,6 +286,92 @@ function renderDashboard() {
         </div>
       ` : `<div class="empty">Nessuna giornata sportiva presente.</div>`}
     </section>
+  `;
+}
+
+function renderUsersSection() {
+  const users = [...db.users].sort((a, b) => a.username.localeCompare(b.username));
+  return `
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Utenze</p>
+          <h2>Gestione utenti</h2>
+        </div>
+        <span class="role-pill">${users.length} utenti</span>
+      </div>
+      <form data-action="register" style="margin-bottom: 18px;">
+        <h3 style="margin-top: 0;">Nuovo utente</h3>
+        <div class="form-grid three">
+          <div class="field">
+            <label for="reg-firstName">Nome</label>
+            <input id="reg-firstName" name="firstName" required>
+          </div>
+          <div class="field">
+            <label for="reg-lastName">Cognome</label>
+            <input id="reg-lastName" name="lastName" required>
+          </div>
+          <div class="field">
+            <label for="reg-username">Username</label>
+            <input id="reg-username" name="username" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="reg-password">Password</label>
+            <input id="reg-password" name="password" type="password" autocomplete="new-password" required>
+          </div>
+          <div class="field">
+            <label for="reg-role">Tipo utente</label>
+            <select id="reg-role" name="role">
+              <option>${ROLES.TEACHER}</option>
+              <option>${ROLES.ADMIN}</option>
+              <option>${ROLES.GUEST}</option>
+            </select>
+          </div>
+        </div>
+        <div class="inline" style="margin-top: 14px;">
+          <button class="btn" type="submit">Crea utente</button>
+        </div>
+      </form>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cognome</th>
+              <th>Nome</th>
+              <th>Username</th>
+              <th>Password</th>
+              <th>Ruolo</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(renderUserRow).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderUserRow(user) {
+  const isCurrent = state.user?.id === user.id;
+  return `
+    <tr>
+      <td><input value="${escapeHtml(user.lastName)}" data-action="update-user" data-field="lastName" data-user-id="${user.id}"></td>
+      <td><input value="${escapeHtml(user.firstName)}" data-action="update-user" data-field="firstName" data-user-id="${user.id}"></td>
+      <td><input value="${escapeHtml(user.username)}" data-action="update-user" data-field="username" data-user-id="${user.id}"></td>
+      <td><input value="${escapeHtml(user.password)}" data-action="update-user" data-field="password" data-user-id="${user.id}"></td>
+      <td>
+        <select data-action="update-user" data-field="role" data-user-id="${user.id}" ${isCurrent ? "disabled" : ""}>
+          <option ${user.role === ROLES.ADMIN ? "selected" : ""}>${ROLES.ADMIN}</option>
+          <option ${user.role === ROLES.TEACHER ? "selected" : ""}>${ROLES.TEACHER}</option>
+          <option ${user.role === ROLES.GUEST ? "selected" : ""}>${ROLES.GUEST}</option>
+        </select>
+      </td>
+      <td>
+        <button class="btn danger tiny" data-action="delete-user" data-user-id="${user.id}" ${isCurrent ? "disabled" : ""}>Elimina</button>
+      </td>
+    </tr>
   `;
 }
 
@@ -1180,9 +1262,9 @@ app.addEventListener("submit", (event) => {
     render();
   }
 
-  if (action === "register") {
+  if (action === "register" && canAdmin()) {
     if (db.users.some((user) => user.username === data.username)) return toast("Username già esistente.");
-    const user = {
+    db.users.push({
       id: id("user"),
       firstName: data.firstName.trim(),
       lastName: data.lastName.trim(),
@@ -1190,11 +1272,10 @@ app.addEventListener("submit", (event) => {
       password: data.password,
       role: data.role,
       createdAt: new Date().toISOString()
-    };
-    db.users.push(user);
+    });
     saveDb();
-    setSession(user);
-    state.view = "dashboard";
+    toast("Utente creato.");
+    form.reset();
     render();
   }
 
@@ -1305,6 +1386,11 @@ app.addEventListener("click", (event) => {
     render();
   }
 
+  if (action === "dashboard-section" && canAdmin()) {
+    state.dashboardSection = target.dataset.section;
+    render();
+  }
+
   if (action === "toggle-create-day") {
     document.querySelector("#create-day-form")?.classList.toggle("hidden");
   }
@@ -1402,6 +1488,15 @@ app.addEventListener("click", (event) => {
     saveDb();
     render();
   }
+
+  if (action === "delete-user" && canAdmin()) {
+    const userId = target.dataset.userId;
+    if (userId === state.user.id) return toast("Non puoi eliminare l'utente attualmente in uso.");
+    if (!confirm("Eliminare questo utente?")) return;
+    db.users = db.users.filter((user) => user.id !== userId);
+    saveDb();
+    render();
+  }
 });
 
 app.addEventListener("change", (event) => {
@@ -1465,6 +1560,10 @@ app.addEventListener("change", (event) => {
     }
     saveDb();
     render();
+  }
+
+  if (action === "update-user" && canAdmin()) {
+    updateUserField(target);
   }
 });
 
@@ -1535,6 +1634,33 @@ app.addEventListener("input", (event) => {
     upsertFinalResult(target.dataset.sportId, target.dataset.participantId, { value: target.value, status: "value" });
   }
 });
+
+function updateUserField(target) {
+  const user = db.users.find((item) => item.id === target.dataset.userId);
+  if (!user) return;
+  const field = target.dataset.field;
+  const next = target.value.trim();
+  if (!next) {
+    target.value = user[field];
+    return toast("Il campo non può essere vuoto.");
+  }
+  if (field === "role" && user.id === state.user.id) {
+    target.value = user.role;
+    return toast("Non puoi cambiare il ruolo dell'utente attualmente in uso.");
+  }
+  if (field === "username" && db.users.some((item) => item.id !== user.id && item.username.toLowerCase() === next.toLowerCase())) {
+    target.value = user.username;
+    return toast("Username già esistente.");
+  }
+  user[field] = next;
+  if (user.id === state.user.id && field === "username") {
+    state.user.username = next;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(state.user));
+  }
+  saveDb();
+  toast("Utente aggiornato.");
+  render();
+}
 
 function resetFilters() {
   state.filters = { yearId: "", sectionId: "", sex: "M" };
