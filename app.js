@@ -27,6 +27,7 @@ const state = {
   sportTab: "proves",
   speedPhase: "qualifications",
   modalTeamId: null,
+  profileOpen: false,
   randomOrder: false,
   filters: {
     yearId: "",
@@ -216,7 +217,6 @@ function renderAuth() {
         <form class="panel" data-action="login">
           <div class="section-head">
             <h2>Login</h2>
-            <span class="role-pill">administrator</span>
           </div>
           <div class="form-grid">
             <div class="field">
@@ -228,7 +228,6 @@ function renderAuth() {
               <input id="login-password" name="password" type="password" autocomplete="current-password" required>
             </div>
           </div>
-          <p class="fineprint">Credenziali iniziali: username administrator, password administrator.</p>
           <div class="inline" style="margin-top: 14px;">
             <button class="btn" type="submit">Accedi</button>
           </div>
@@ -481,7 +480,7 @@ function renderDay() {
         </div>
       </div>
       ${sports.length ? `
-        <div class="grid">
+        <div class="sport-widget-row">
           ${sportWidgets.map(renderSportDayCard).join("")}
         </div>
       ` : `<div class="empty">Configura almeno uno sport per questa giornata.</div>`}
@@ -521,43 +520,36 @@ function renderSportDayCard(widget) {
 }
 
 function renderIncompleteSummary(day, sportWidgets) {
+  const rows = getMissingProofRows(day.id, sportWidgets);
   return `
     <section class="panel">
       <div class="section-head">
         <div>
-          <p class="eyebrow">Avanzamento sezioni</p>
-          <h2>Prove da completare</h2>
+          <p class="eyebrow">Prove mancanti</p>
+          <h2>Sezioni da completare</h2>
         </div>
       </div>
-      <div class="incomplete-grid">
-        ${sportWidgets.map((widget) => renderSportIncompleteTable(day, widget)).join("")}
-      </div>
-    </section>
-  `;
-}
-
-function renderSportIncompleteTable(day, widget) {
-  const rows = getIncompleteSectionRows(day.id, widget.sport, widget.phase);
-  return `
-    <section class="sport-summary">
-      <div class="row-head compact">
-        <h3>${escapeHtml(widget.label)}</h3>
-      </div>
       <div class="table-wrap">
-        <table class="compact-table">
+        <table>
           <thead>
             <tr>
-              <th>Anno e sezione</th>
+              <th>Sport</th>
+              <th>Anno</th>
+              <th>Sezione</th>
+              <th>Sesso</th>
               <th>Contatore</th>
             </tr>
           </thead>
           <tbody>
             ${rows.length ? rows.map((row) => `
               <tr>
-                <td>${escapeHtml(row.year)} ${escapeHtml(row.section)}</td>
+                <td>${escapeHtml(row.sport)}</td>
+                <td>${escapeHtml(row.year)}</td>
+                <td>${escapeHtml(row.section)}</td>
+                <td>${escapeHtml(row.sex)}</td>
                 <td><span class="pill">${row.incomplete}</span></td>
               </tr>
-            `).join("") : `<tr><td colspan="2" class="muted">Nessuna sezione configurata.</td></tr>`}
+            `).join("") : `<tr><td colspan="5" class="muted">Nessuna prova mancante.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -1234,42 +1226,68 @@ function getSportProgress(sport, phase = null) {
   };
 }
 
-function getIncompleteSectionRows(dayId, sport, phase = null) {
+function getMissingProofRows(dayId, sportWidgets) {
+  return sportWidgets
+    .flatMap((widget) => getIncompleteSectionRows(dayId, widget))
+    .filter((row) => row.incomplete > 0)
+    .sort((a, b) =>
+      a.sport.localeCompare(b.sport) ||
+      naturalCompare(a.year, b.year) ||
+      naturalCompare(a.section, b.section) ||
+      a.sex.localeCompare(b.sex)
+    );
+}
+
+function getIncompleteSectionRows(dayId, widget) {
+  const { sport, phase, label } = widget;
+  if (sport.name === "Velocita" && phase === "finals") {
+    return getYears(dayId).flatMap((year) => SEXES.map((sex) => {
+      const finalists = getSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant);
+      return {
+        sport: label,
+        year: year.label,
+        section: "",
+        sex: sex.label,
+        incomplete: finalists.filter((participant) => !isSpeedFinalComplete(participant, sport)).length
+      };
+    }));
+  }
+
   return getYears(dayId).flatMap((year) =>
-    getSections(year.id).map((section) => {
+    getSections(year.id).flatMap((section) => SEXES.map((sex) => {
       if (sport.name === "Staffetta") {
         const teams = db.relayTeams.filter((team) =>
           team.dayId === dayId &&
           team.sportId === sport.id &&
           team.yearId === year.id &&
-          team.sectionId === section.id
+          team.sectionId === section.id &&
+          team.sex === sex.value
         );
         return {
+          sport: label,
           year: year.label,
           section: section.label,
+          sex: sex.label,
           incomplete: teams.filter((team) => !isResultComplete(getTeamResult(team.id))).length
         };
       }
 
-      const participants = sport.name === "Velocita" && phase === "finals"
-        ? SEXES.flatMap((sex) => getSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant))
-          .filter((participant) => participant.sectionId === section.id)
-        : db.participants.filter((participant) =>
+      const participants = db.participants.filter((participant) =>
           participant.dayId === dayId &&
           participant.sportId === sport.id &&
           participant.yearId === year.id &&
-          participant.sectionId === section.id
+          participant.sectionId === section.id &&
+          participant.sex === sex.value
         );
       const completionPhase = sport.name === "Velocita" ? "qualification" : "standard";
       return {
+        sport: label,
         year: year.label,
         section: section.label,
-        incomplete: participants.filter((participant) => sport.name === "Velocita" && phase === "finals"
-          ? !isSpeedFinalComplete(participant, sport)
-          : !isParticipantSportComplete(participant, sport, completionPhase)
-        ).length
+        sex: sex.label,
+        incomplete: participants.filter((participant) => !isParticipantSportComplete(participant, sport, completionPhase)).length
       };
-    })
+    }))
   );
 }
 
@@ -1750,6 +1768,7 @@ app.addEventListener("click", (event) => {
   }
 
   if (action === "logout") {
+    state.profileOpen = false;
     setSession(null);
     state.view = "auth";
     render();
@@ -1758,11 +1777,18 @@ app.addEventListener("click", (event) => {
   if (action === "go-dashboard") {
     state.view = "dashboard";
     state.modalTeamId = null;
+    state.profileOpen = false;
+    render();
+  }
+
+  if (action === "toggle-profile") {
+    state.profileOpen = !state.profileOpen;
     render();
   }
 
   if (action === "dashboard-section" && canAdmin()) {
     state.dashboardSection = target.dataset.section;
+    state.profileOpen = false;
     render();
   }
 
@@ -1774,6 +1800,7 @@ app.addEventListener("click", (event) => {
     state.selectedDayId = target.dataset.dayId;
     state.view = "day";
     state.modalTeamId = null;
+    state.profileOpen = false;
     resetFilters();
     render();
   }
@@ -2088,6 +2115,32 @@ function updateUserField(target) {
 function resetFilters() {
   state.filters = { yearId: "", sectionId: "", sex: "M" };
   state.randomOrder = false;
+}
+
+function renderTopbar() {
+  return `
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">GS</span>
+        <span>Giornate Sportive</span>
+      </div>
+      <div class="userbar">
+        ${state.view !== "dashboard" ? `<button class="btn secondary tiny" data-action="go-dashboard">Dashboard</button>` : ""}
+        <div class="profile-menu">
+          <button class="profile-button" type="button" aria-label="Profilo utente" data-action="toggle-profile">
+            <span class="profile-icon" aria-hidden="true"></span>
+          </button>
+          ${state.profileOpen ? `
+            <div class="profile-popover">
+              <strong>${escapeHtml(state.user.username)}</strong>
+              <span>${escapeHtml(state.user.role)}</span>
+              <button class="btn ghost tiny" data-action="logout">Esci</button>
+            </div>
+          ` : ""}
+        </div>
+      </div>
+    </header>
+  `;
 }
 
 restoreSession();
