@@ -1,17 +1,21 @@
 :root {
-  --bg: #f6f7fb;
-  --surface: #ffffff;
-  --surface-2: #eef3f8;
-  --ink: #17202a;
-  --muted: #617082;
-  --line: #dce3ec;
-  --primary: #176b87;
-  --primary-strong: #0f4c61;
-  --accent: #d96c4b;
-  --green: #287a57;
-  --amber: #a46614;
-  --danger: #b63b48;
-  --shadow: 0 16px 44px rgba(31, 49, 68, 0.12);
+  --bg: #101822;
+  --surface: #172230;
+  --surface-2: #203146;
+  --surface-3: #24384d;
+  --field: #111b26;
+  --table-head: #263d54;
+  --ink: #eef5fb;
+  --muted: #a7b7c8;
+  --line: #33485e;
+  --primary: #22a7a0;
+  --primary-strong: #18817e;
+  --accent: #d88546;
+  --green: #57c487;
+  --amber: #e3ad55;
+  --danger: #d35b67;
+  --danger-strong: #a93f4a;
+  --shadow: 0 18px 46px rgba(0, 0, 0, 0.28);
   --radius: 8px;
 }
 
@@ -23,10 +27,18 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(23, 107, 135, 0.08), transparent 320px),
+    radial-gradient(circle at 12% 0%, rgba(34, 167, 160, 0.22), transparent 34vw),
+    radial-gradient(circle at 92% 8%, rgba(216, 133, 70, 0.18), transparent 28vw),
+    linear-gradient(180deg, #142131 0%, var(--bg) 360px),
     var(--bg);
   color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Aptos", "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Aptos Display", "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif;
 }
 
 button,
@@ -60,7 +72,7 @@ select:disabled {
 .auth-panel {
   align-content: center;
   background:
-    linear-gradient(135deg, rgba(23, 107, 135, 0.92), rgba(40, 122, 87, 0.86)),
+    linear-gradient(135deg, rgba(15, 76, 91, 0.95), rgba(83, 45, 91, 0.86), rgba(168, 77, 48, 0.72)),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M0 40h120M40 0v120M0 80h120M80 0v120' stroke='white' stroke-opacity='.12'/%3E%3Ccircle cx='20' cy='20' r='4' fill='white' fill-opacity='.16'/%3E%3Ccircle cx='100' cy='100' r='4' fill='white' fill-opacity='.16'/%3E%3C/svg%3E");
   color: #fff;
   padding: clamp(28px, 7vw, 84px);
@@ -104,8 +116,8 @@ select:disabled {
   justify-content: space-between;
   gap: 16px;
   padding: 14px clamp(14px, 4vw, 38px);
-  border-bottom: 1px solid rgba(220, 227, 236, 0.85);
-  background: rgba(246, 247, 251, 0.9);
+  border-bottom: 1px solid rgba(51, 72, 94, 0.86);
+  background: rgba(16, 24, 34, 0.9);
   backdrop-filter: blur(14px);
 }
 
@@ -152,7 +164,7 @@ select:disabled {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 1px 0 rgba(23, 32, 42, 0.03);
+  box-shadow: var(--shadow);
 }
 
 .panel {
@@ -180,6 +192,11 @@ select:disabled {
   margin: 0;
 }
 
+.row-head.compact {
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: var(--primary);
@@ -205,6 +222,12 @@ select:disabled {
   gap: 16px;
 }
 
+.days-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
 .dashboard-nav {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -223,17 +246,17 @@ select:disabled {
   background: var(--surface);
   color: var(--ink);
   text-align: left;
-  box-shadow: 0 1px 0 rgba(23, 32, 42, 0.03);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .nav-tile:hover,
 .nav-tile.active {
-  border-color: rgba(23, 107, 135, 0.48);
-  background: #f4fafb;
+  border-color: rgba(34, 167, 160, 0.58);
+  background: #1b2c3d;
 }
 
 .nav-tile.active {
-  box-shadow: inset 0 0 0 2px rgba(23, 107, 135, 0.16);
+  box-shadow: inset 0 0 0 2px rgba(34, 167, 160, 0.18);
 }
 
 .nav-tile strong,
@@ -257,7 +280,7 @@ select:disabled {
   width: 44px;
   height: 44px;
   border-radius: var(--radius);
-  background: rgba(23, 107, 135, 0.12);
+  background: rgba(34, 167, 160, 0.16);
 }
 
 .calendar-icon::before {
@@ -312,7 +335,13 @@ select:disabled {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 1px 0 rgba(23, 32, 42, 0.03);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.days-list .card {
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
 }
 
 .card h3 {
@@ -325,6 +354,7 @@ select:disabled {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .card-actions .btn {
@@ -356,13 +386,13 @@ select:disabled {
 }
 
 .role-pill {
-  background: rgba(23, 107, 135, 0.12);
-  color: var(--primary-strong);
+  background: rgba(34, 167, 160, 0.16);
+  color: #77e4dc;
 }
 
 .status-pill {
-  background: rgba(217, 108, 75, 0.13);
-  color: #8d3e27;
+  background: rgba(216, 133, 70, 0.18);
+  color: #ffd29a;
 }
 
 .form-grid {
@@ -382,7 +412,7 @@ select:disabled {
 
 .field label,
 .inline-label {
-  color: #344354;
+  color: #d4e0ed;
   font-size: 0.84rem;
   font-weight: 800;
 }
@@ -392,16 +422,16 @@ select {
   width: 100%;
   min-height: 42px;
   padding: 9px 11px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #456078;
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--field);
   color: var(--ink);
 }
 
 input:focus,
 select:focus {
   border-color: var(--primary);
-  outline: 3px solid rgba(23, 107, 135, 0.16);
+  outline: 3px solid rgba(34, 167, 160, 0.18);
 }
 
 .inline {
@@ -424,7 +454,7 @@ select:focus {
   padding: 9px 14px;
   border-radius: var(--radius);
   background: var(--primary);
-  color: #fff;
+  color: #061113;
   font-weight: 800;
 }
 
@@ -433,29 +463,30 @@ select:focus {
 }
 
 .btn.secondary {
-  background: #e8eef5;
-  color: #263544;
+  background: var(--surface-3);
+  color: var(--ink);
 }
 
 .btn.secondary:hover {
-  background: #dce6f0;
+  background: #304a63;
 }
 
 .btn.ghost {
   background: transparent;
-  color: var(--primary-strong);
+  color: #77e4dc;
 }
 
 .btn.ghost:hover {
-  background: rgba(23, 107, 135, 0.1);
+  background: rgba(34, 167, 160, 0.12);
 }
 
 .btn.danger {
   background: var(--danger);
+  color: #fff;
 }
 
 .btn.danger:hover {
-  background: #8e2d37;
+  background: var(--danger-strong);
 }
 
 .btn.tiny {
@@ -470,8 +501,8 @@ select:focus {
   width: 38px;
   height: 38px;
   border-radius: var(--radius);
-  background: #e8eef5;
-  color: #263544;
+  background: var(--surface-3);
+  color: var(--ink);
   font-weight: 900;
 }
 
@@ -495,14 +526,14 @@ select:focus {
   min-height: 40px;
   padding: 8px 13px;
   border-radius: var(--radius);
-  background: #e8eef5;
-  color: #263544;
+  background: var(--surface-3);
+  color: var(--ink);
   font-weight: 800;
 }
 
 .tab.active {
   background: var(--primary);
-  color: #fff;
+  color: #061113;
 }
 
 .table-wrap {
@@ -515,7 +546,7 @@ table {
   width: 100%;
   min-width: 760px;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--surface);
 }
 
 th,
@@ -527,8 +558,8 @@ td {
 }
 
 th {
-  background: #f0f4f8;
-  color: #344354;
+  background: var(--table-head);
+  color: #d4e0ed;
   font-size: 0.82rem;
   text-transform: uppercase;
 }
@@ -549,7 +580,7 @@ tr:last-child td {
   place-items: center;
   min-height: 180px;
   padding: 26px;
-  border: 1px dashed #c7d3df;
+  border: 1px dashed #536b83;
   border-radius: var(--radius);
   color: var(--muted);
   text-align: center;
@@ -560,6 +591,18 @@ tr:last-child td {
   gap: 10px;
 }
 
+.subsection-divider {
+  height: 1px;
+  margin: 22px 0;
+  background: var(--line);
+}
+
+.sports-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+
 .config-row,
 .team-card {
   display: grid;
@@ -567,22 +610,87 @@ tr:last-child td {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fbfcfe;
+  background: #1b2a3a;
+}
+
+.config-row .inline {
+  align-items: center;
+}
+
+.years-panel {
+  margin-top: 0;
+}
+
+.add-year-form {
+  align-items: end;
+}
+
+.years-list {
+  display: grid;
+  gap: 12px;
 }
 
 .year-card {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   padding: 14px;
+  border: 1px solid var(--line);
   border-left: 4px solid var(--accent);
-  background: #fbfcfe;
+  background: #1b2a3a;
   border-radius: var(--radius);
 }
 
-.section-list {
+.mini-label {
+  color: #d4e0ed;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.year-table-head {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.year-title-edit {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+}
+
+.year-title-edit input {
+  width: 110px;
+}
+
+.sections-table-wrap {
+  overflow-x: auto;
+}
+
+.sections-table {
+  min-width: 0;
+}
+
+.sections-table th,
+.sections-table td {
+  padding: 9px;
+}
+
+.sections-table th:nth-child(2),
+.sections-table th:nth-child(3),
+.sections-table td:nth-child(2),
+.sections-table td:nth-child(3) {
+  width: 120px;
+  white-space: nowrap;
+}
+
+.create-row td {
+  background: #152231;
 }
 
 .chip {
@@ -592,12 +700,16 @@ tr:last-child td {
   padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--field);
 }
 
 .chip input {
   width: 74px;
   min-height: 34px;
+}
+
+.add-section-form {
+  align-items: end;
 }
 
 .check-grid {
@@ -614,7 +726,7 @@ tr:last-child td {
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--field);
 }
 
 .check-item input {
@@ -628,7 +740,7 @@ tr:last-child td {
   display: inline-grid;
   place-items: center;
   border-radius: var(--radius);
-  background: rgba(40, 122, 87, 0.12);
+  background: rgba(87, 196, 135, 0.16);
   color: var(--green);
   font-weight: 900;
 }
@@ -641,7 +753,7 @@ tr:last-child td {
   max-width: min(420px, calc(100vw - 36px));
   padding: 13px 15px;
   border-radius: var(--radius);
-  background: #17202a;
+  background: #071018;
   color: #fff;
   box-shadow: var(--shadow);
 }
@@ -681,6 +793,16 @@ tr:last-child td {
 
   .dashboard-nav {
     grid-template-columns: 1fr;
+  }
+
+  .days-list .card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .year-table-head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .btn,

@@ -282,7 +282,7 @@ function renderDaysSection() {
       </div>
       ${canAdmin() ? renderCreateDayForm() : ""}
       ${days.length ? `
-        <div class="grid">
+        <div class="days-list">
           ${days.map(renderDayCard).join("")}
         </div>
       ` : `<div class="empty">Nessuna giornata sportiva presente.</div>`}
@@ -498,7 +498,7 @@ function renderDayEdit() {
 
 function renderDayAdminConfig(day) {
   return `
-    <div class="panel" style="margin-bottom: 18px;">
+    <div class="panel day-edit-main" style="margin-bottom: 18px;">
       <div class="row-head">
         <h3>Dati giornata</h3>
       </div>
@@ -529,30 +529,31 @@ function renderDayAdminConfig(day) {
           <button class="btn" type="submit">Salva dati</button>
         </div>
       </form>
-    </div>
-    <div class="grid">
-      <div class="panel">
-        <div class="row-head">
-          <h3>Configurazione sport</h3>
-        </div>
-        <div class="list">
-          ${SPORTS.map((sportName) => renderSportConfig(day.id, sportName)).join("")}
-        </div>
+      <div class="subsection-divider"></div>
+      <div class="row-head compact">
+        <h3>Configurazione sport</h3>
       </div>
-      <div class="panel">
-        <div class="row-head">
-          <h3>Anni e sezioni</h3>
+      <div class="sports-config-grid">
+        ${SPORTS.map((sportName) => renderSportConfig(day.id, sportName)).join("")}
+      </div>
+    </div>
+    <div class="panel years-panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Classi</p>
+          <h2>Anni e sezioni</h2>
+          <p class="fineprint">Un anno si può eliminare solo se non contiene sezioni. Una sezione si può eliminare solo se non contiene studenti.</p>
         </div>
-        <form class="inline" data-action="add-year" data-day-id="${day.id}">
+        <form class="inline add-year-form" data-action="add-year" data-day-id="${day.id}">
           <div class="field">
             <label>Nuovo anno</label>
             <input name="label" placeholder="1, 2, 3..." required>
           </div>
           <button class="btn" type="submit">Aggiungi</button>
         </form>
-        <div class="list" style="margin-top: 14px;">
-          ${getYears(day.id).map((year) => renderYearConfig(year)).join("") || `<div class="empty">Aggiungi anni e sezioni per avviare le prove.</div>`}
-        </div>
+      </div>
+      <div class="years-list">
+        ${getYears(day.id).map((year) => renderYearConfig(year)).join("") || `<div class="empty">Aggiungi anni e sezioni per avviare le prove.</div>`}
       </div>
     </div>
   `;
@@ -588,33 +589,61 @@ function renderSportConfig(dayId, sportName) {
 
 function renderYearConfig(year) {
   const sections = getSections(year.id);
+  const canDeleteYear = sections.length === 0;
   return `
     <div class="year-card">
-      <div class="inline" style="justify-content: space-between; align-items: center;">
-        <div class="inline">
-          <div class="field">
-            <label>Anno</label>
-            <input value="${escapeHtml(year.label)}" data-action="update-year" data-year-id="${year.id}">
-          </div>
+      <div class="year-table-head">
+        <div class="year-title-edit">
+          <span class="mini-label">Anno</span>
+          <input value="${escapeHtml(year.label)}" data-action="update-year" data-year-id="${year.id}">
+          <span class="pill">${sections.length} sezioni</span>
         </div>
-        <button class="btn danger tiny" data-action="delete-year" data-year-id="${year.id}">Elimina anno</button>
+        <button class="btn danger tiny" data-action="delete-year" data-year-id="${year.id}" ${canDeleteYear ? "" : "disabled"} title="${canDeleteYear ? "Elimina anno" : "Elimina prima tutte le sezioni"}">Elimina anno</button>
       </div>
-      <div class="section-list">
-        ${sections.map((section) => `
-          <span class="chip">
-            <input value="${escapeHtml(section.label)}" data-action="update-section" data-section-id="${section.id}">
-            <button class="icon-btn" title="Elimina sezione" data-action="delete-section" data-section-id="${section.id}">×</button>
-          </span>
-        `).join("")}
+      <div class="sections-table-wrap">
+        <table class="sections-table">
+          <thead>
+            <tr>
+              <th>Sezione</th>
+              <th>Studenti</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sections.map((section) => renderSectionRow(section)).join("") || `
+              <tr>
+                <td colspan="3" class="muted">Nessuna sezione per questo anno.</td>
+              </tr>
+            `}
+            <tr class="create-row">
+              <td colspan="3">
+                <form class="inline add-section-form" data-action="add-section" data-year-id="${year.id}">
+                  <div class="field">
+                    <label>Nuova sezione</label>
+                    <input name="label" placeholder="A, B, C..." required>
+                  </div>
+                  <button class="btn tiny" type="submit">Aggiungi sezione</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <form class="inline" data-action="add-section" data-year-id="${year.id}">
-        <div class="field">
-          <label>Nuova sezione</label>
-          <input name="label" placeholder="A, B, C..." required>
-        </div>
-        <button class="btn tiny" type="submit">Aggiungi sezione</button>
-      </form>
     </div>
+  `;
+}
+
+function renderSectionRow(section) {
+  const studentCount = db.participants.filter((participant) => participant.sectionId === section.id).length;
+  const canDeleteSection = studentCount === 0;
+  return `
+    <tr>
+      <td><input value="${escapeHtml(section.label)}" data-action="update-section" data-section-id="${section.id}"></td>
+      <td><span class="pill">${studentCount}</span></td>
+      <td>
+        <button class="btn danger tiny" data-action="delete-section" data-section-id="${section.id}" ${canDeleteSection ? "" : "disabled"} title="${canDeleteSection ? "Elimina sezione" : "Non puoi eliminare una sezione con studenti"}">Elimina</button>
+      </td>
+    </tr>
   `;
 }
 
@@ -951,6 +980,7 @@ function getSection(sectionId) {
 function getParticipantsForContext() {
   return db.participants.filter((participant) =>
     participant.dayId === state.selectedDayId &&
+    participant.sportId === state.selectedSportId &&
     participant.yearId === state.filters.yearId &&
     participant.sectionId === state.filters.sectionId &&
     participant.sex === state.filters.sex
@@ -1100,7 +1130,7 @@ function bestParticipantResult(sport, participant, phase) {
 
 function getSpeedFinalists(sport, yearId, sex) {
   return db.participants
-    .filter((participant) => participant.dayId === state.selectedDayId && participant.yearId === yearId && participant.sex === sex)
+    .filter((participant) => participant.dayId === state.selectedDayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
     .map((participant) => ({ participant, best: bestParticipantResult(sport, participant, "qualification").value }))
     .filter((item) => Number.isFinite(item.best))
     .sort((a, b) => a.best - b.best || a.participant.lastName.localeCompare(b.participant.lastName))
@@ -1115,7 +1145,7 @@ function computeRanking(sport, yearId, sex) {
 
 function computeStandardRanking(sport, yearId, sex) {
   const rows = db.participants
-    .filter((participant) => participant.dayId === state.selectedDayId && participant.yearId === yearId && participant.sex === sex)
+    .filter((participant) => participant.dayId === state.selectedDayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
     .map((participant) => {
       const best = bestParticipantResult(sport, participant, "standard");
       return {
@@ -1146,7 +1176,7 @@ function computeRelayRanking(sport, yearId, sex) {
 }
 
 function computeSpeedRanking(sport, yearId, sex) {
-  const all = db.participants.filter((participant) => participant.dayId === state.selectedDayId && participant.yearId === yearId && participant.sex === sex);
+  const all = db.participants.filter((participant) => participant.dayId === state.selectedDayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex);
   const finalistIds = getSpeedFinalists(sport, yearId, sex).map((item) => item.participant.id);
   const finalistRows = finalistIds.map((participantId) => {
     const participant = all.find((item) => item.id === participantId);
@@ -1244,9 +1274,11 @@ function createSport(dayId, sportName) {
 }
 
 function deleteSport(sportId) {
+  const participantIds = db.participants.filter((participant) => participant.sportId === sportId).map((participant) => participant.id);
   db.sports = db.sports.filter((sport) => sport.id !== sportId);
+  db.participants = db.participants.filter((participant) => participant.sportId !== sportId);
   db.attempts = db.attempts.filter((attempt) => attempt.sportId !== sportId);
-  db.results = db.results.filter((result) => result.sportId !== sportId);
+  db.results = db.results.filter((result) => result.sportId !== sportId && !participantIds.includes(result.targetId));
   db.relayTeams = db.relayTeams.filter((team) => team.sportId !== sportId);
   db.rankings = db.rankings.filter((ranking) => ranking.sportId !== sportId);
 }
@@ -1357,6 +1389,7 @@ app.addEventListener("submit", (event) => {
     db.participants.push({
       id: id("participant"),
       dayId: state.selectedDayId,
+      sportId: state.selectedSportId,
       yearId: state.filters.yearId,
       sectionId: state.filters.sectionId,
       sex: state.filters.sex,
@@ -1469,7 +1502,8 @@ app.addEventListener("click", (event) => {
 
   if (action === "delete-year" && canAdmin()) {
     const yearId = target.dataset.yearId;
-    if (!confirm("Eliminare anno, sezioni e dati collegati?")) return;
+    if (getSections(yearId).length > 0) return toast("Non puoi eliminare un anno che contiene sezioni.");
+    if (!confirm("Eliminare questo anno?")) return;
     const sectionIds = getSections(yearId).map((section) => section.id);
     const participantIds = db.participants.filter((participant) => participant.yearId === yearId).map((participant) => participant.id);
     const teamIds = db.relayTeams.filter((team) => team.yearId === yearId || sectionIds.includes(team.sectionId)).map((team) => team.id);
@@ -1485,6 +1519,9 @@ app.addEventListener("click", (event) => {
 
   if (action === "delete-section" && canAdmin()) {
     const sectionId = target.dataset.sectionId;
+    if (db.participants.some((participant) => participant.sectionId === sectionId)) {
+      return toast("Non puoi eliminare una sezione con studenti presenti.");
+    }
     if (!confirm("Eliminare sezione e dati collegati?")) return;
     const participantIds = db.participants.filter((participant) => participant.sectionId === sectionId).map((participant) => participant.id);
     const teamIds = db.relayTeams.filter((team) => team.sectionId === sectionId).map((team) => team.id);

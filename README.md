@@ -20,7 +20,7 @@ I dati vengono salvati nel `localStorage` del browser nella chiave `giornateSpor
 - Ruoli `Administrator`, `Docente` e `Spettatore/Ospite`.
 - Creazione, modifica ed eliminazione delle giornate sportive per amministratori.
 - Configurazione di sport, prove, finalisti della velocita, anni e sezioni.
-- Gestione partecipanti per anno, sezione e sesso.
+- Gestione partecipanti per sport, anno, sezione e sesso.
 - Inserimento risultati inline per Vortex, Salto in lungo, Staffetta e Velocita.
 - Qualifiche e finali separate per la Velocita.
 - Classifiche automatiche con sezioni accorpate per anno e sesso.
