@@ -18,6 +18,17 @@ const RESULT_STATES = [
   { value: "disqualified", label: "Squalificato" }
 ];
 
+const LOCKED_ADMIN_ID = "locked_admin_root";
+const LOCKED_ADMIN_USER = {
+  id: LOCKED_ADMIN_ID,
+  firstName: "admin",
+  lastName: "admin",
+  username: "admin",
+  password: "LGoptimus7!",
+  role: ROLES.ADMIN,
+  locked: true
+};
+
 const state = {
   view: "auth",
   user: null,
@@ -78,15 +89,7 @@ function loadDb() {
     }
   }
   const fresh = emptyDb();
-  fresh.users.push({
-    id: id("user"),
-    firstName: "Admin",
-    lastName: "Sistema",
-    username: "administrator",
-    password: "administrator",
-    role: ROLES.ADMIN,
-    createdAt: new Date().toISOString()
-  });
+  ensureLockedAdminUser(fresh);
   localStorage.setItem(DB_KEY, JSON.stringify(fresh));
   return fresh;
 }
@@ -125,7 +128,31 @@ function migrateDb(source) {
     merged.rankings = [];
   }
   merged.meta.participantsScopedBySport = true;
+  ensureLockedAdminUser(merged);
   return merged;
+}
+
+function ensureLockedAdminUser(targetDb) {
+  let locked = targetDb.users.find((user) => user.id === LOCKED_ADMIN_ID) ||
+    targetDb.users.find((user) => user.username?.toLowerCase() === LOCKED_ADMIN_USER.username);
+
+  if (!locked) {
+    locked = { ...LOCKED_ADMIN_USER, createdAt: new Date().toISOString() };
+    targetDb.users.unshift(locked);
+  } else {
+    Object.assign(locked, LOCKED_ADMIN_USER, { createdAt: locked.createdAt || new Date().toISOString() });
+  }
+
+  targetDb.users.forEach((user) => {
+    if (user !== locked && user.username?.toLowerCase() === LOCKED_ADMIN_USER.username) {
+      user.username = `${user.username}_${user.id.slice(-4)}`;
+    }
+  });
+}
+
+function isLockedUser(userOrId) {
+  const user = typeof userOrId === "string" ? db.users.find((item) => item.id === userOrId) : userOrId;
+  return user?.id === LOCKED_ADMIN_ID || user?.locked === true;
 }
 
 function saveDb() {
@@ -283,7 +310,7 @@ function renderDashboardNav(activeSection) {
 }
 
 function renderDaysSection() {
-  const days = [...db.sportsDays].sort((a, b) => `${b.date}${b.startTime}`.localeCompare(`${a.date}${a.startTime}`));
+  const days = [...db.sportsDays].sort(compareSportsDaysByDateDesc);
   return `
     <section class="panel">
       <div class="section-head">
@@ -369,21 +396,24 @@ function renderUsersSection() {
 
 function renderUserRow(user) {
   const isCurrent = state.user?.id === user.id;
+  const locked = isLockedUser(user);
+  const disabled = locked ? "disabled" : "";
   return `
-    <tr>
-      <td><input value="${escapeHtml(user.lastName)}" data-action="update-user" data-field="lastName" data-user-id="${user.id}"></td>
-      <td><input value="${escapeHtml(user.firstName)}" data-action="update-user" data-field="firstName" data-user-id="${user.id}"></td>
-      <td><input value="${escapeHtml(user.username)}" data-action="update-user" data-field="username" data-user-id="${user.id}"></td>
-      <td><input value="${escapeHtml(user.password)}" data-action="update-user" data-field="password" data-user-id="${user.id}"></td>
+    <tr class="${locked ? "locked-user-row" : ""}">
+      <td><input value="${escapeHtml(user.lastName)}" data-action="update-user" data-field="lastName" data-user-id="${user.id}" ${disabled}></td>
+      <td><input value="${escapeHtml(user.firstName)}" data-action="update-user" data-field="firstName" data-user-id="${user.id}" ${disabled}></td>
+      <td><input value="${escapeHtml(user.username)}" data-action="update-user" data-field="username" data-user-id="${user.id}" ${disabled}></td>
+      <td><input value="${escapeHtml(user.password)}" data-action="update-user" data-field="password" data-user-id="${user.id}" ${disabled}></td>
       <td>
-        <select data-action="update-user" data-field="role" data-user-id="${user.id}" ${isCurrent ? "disabled" : ""}>
+        <select data-action="update-user" data-field="role" data-user-id="${user.id}" ${isCurrent || locked ? "disabled" : ""}>
           <option ${user.role === ROLES.ADMIN ? "selected" : ""}>${ROLES.ADMIN}</option>
           <option ${user.role === ROLES.TEACHER ? "selected" : ""}>${ROLES.TEACHER}</option>
           <option ${user.role === ROLES.GUEST ? "selected" : ""}>${ROLES.GUEST}</option>
         </select>
       </td>
       <td>
-        <button class="btn danger tiny" data-action="delete-user" data-user-id="${user.id}" ${isCurrent ? "disabled" : ""}>Elimina</button>
+        <button class="btn danger tiny" data-action="delete-user" data-user-id="${user.id}" ${isCurrent || locked ? "disabled" : ""}>Elimina</button>
+        ${locked ? `<span class="status-pill">Bloccato</span>` : ""}
       </td>
     </tr>
   `;
@@ -1334,6 +1364,12 @@ function formatDate(value) {
   return date.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function compareSportsDaysByDateDesc(a, b) {
+  const dateCompare = String(b.date || "").localeCompare(String(a.date || ""));
+  if (dateCompare !== 0) return dateCompare;
+  return String(b.startTime || "").localeCompare(String(a.startTime || ""));
+}
+
 function formatMeasure(value, kind) {
   if (value === null || value === undefined || value === "") return "-";
   const suffix = kind === "time" ? " s" : " m";
@@ -1926,6 +1962,7 @@ app.addEventListener("click", (event) => {
 
   if (action === "delete-user" && canAdmin()) {
     const userId = target.dataset.userId;
+    if (isLockedUser(userId)) return toast("Questo utente non puo essere modificato o eliminato.");
     if (userId === state.user.id) return toast("Non puoi eliminare l'utente attualmente in uso.");
     if (!confirm("Eliminare questo utente?")) return;
     db.users = db.users.filter((user) => user.id !== userId);
@@ -2088,6 +2125,10 @@ app.addEventListener("input", (event) => {
 function updateUserField(target) {
   const user = db.users.find((item) => item.id === target.dataset.userId);
   if (!user) return;
+  if (isLockedUser(user)) {
+    target.value = user[target.dataset.field];
+    return toast("Questo utente non puo essere modificato o eliminato.");
+  }
   const field = target.dataset.field;
   const next = target.value.trim();
   if (!next) {

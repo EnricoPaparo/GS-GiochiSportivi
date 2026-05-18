@@ -540,6 +540,15 @@ select:disabled {
   color: #ffd08a;
 }
 
+.locked-user-row {
+  background: rgba(56, 214, 174, 0.04);
+}
+
+.locked-user-row input,
+.locked-user-row select {
+  border-color: rgba(56, 214, 174, 0.24);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
