@@ -166,7 +166,7 @@ function render() {
     return;
   }
 
-  if (state.view === "day" && !getDay(state.selectedDayId)) {
+  if ((state.view === "day" || state.view === "day-edit") && !getDay(state.selectedDayId)) {
     state.view = "dashboard";
     state.selectedDayId = null;
   }
@@ -180,6 +180,7 @@ function render() {
       <main class="container">
         ${state.view === "dashboard" ? renderDashboard() : ""}
         ${state.view === "day" ? renderDay() : ""}
+        ${state.view === "day-edit" ? renderDayEdit() : ""}
         ${state.view === "sport" ? renderSport() : ""}
       </main>
     </div>
@@ -429,7 +430,13 @@ function renderDayCard(day) {
         <span class="pill">${escapeHtml(day.startTime)}-${escapeHtml(day.endTime)}</span>
         <span class="pill">${sports.length} sport</span>
       </div>
-      <button class="btn" data-action="open-day" data-day-id="${day.id}">Apri</button>
+      <div class="card-actions">
+        <button class="btn" data-action="open-day" data-day-id="${day.id}">Apri</button>
+        ${canAdmin() ? `
+          <button class="icon-btn" title="Modifica giornata" aria-label="Modifica giornata" data-action="edit-day" data-day-id="${day.id}">✎</button>
+          <button class="icon-btn danger-icon" title="Elimina giornata" aria-label="Elimina giornata" data-action="delete-day" data-day-id="${day.id}">×</button>
+        ` : ""}
+      </div>
     </article>
   `;
 }
@@ -449,9 +456,7 @@ function renderDay() {
             <span class="pill">${escapeHtml(day.address)}</span>
           </div>
         </div>
-        ${canAdmin() ? `<button class="btn danger" data-action="delete-day" data-day-id="${day.id}">Elimina</button>` : ""}
       </div>
-      ${canAdmin() ? renderDayAdminConfig(day) : ""}
     </section>
     <section class="panel">
       <div class="section-head">
@@ -472,6 +477,22 @@ function renderDay() {
         </div>
       ` : `<div class="empty">Configura almeno uno sport per questa giornata.</div>`}
     </section>
+  `;
+}
+
+function renderDayEdit() {
+  const day = getDay(state.selectedDayId);
+  return `
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Modifica giornata</p>
+          <h2>${escapeHtml(day.title)}</h2>
+        </div>
+        <button class="btn secondary" data-action="open-day" data-day-id="${day.id}">Apri giornata</button>
+      </div>
+    </section>
+    ${renderDayAdminConfig(day)}
   `;
 }
 
@@ -1398,6 +1419,13 @@ app.addEventListener("click", (event) => {
   if (action === "open-day") {
     state.selectedDayId = target.dataset.dayId;
     state.view = "day";
+    resetFilters();
+    render();
+  }
+
+  if (action === "edit-day" && canAdmin()) {
+    state.selectedDayId = target.dataset.dayId;
+    state.view = "day-edit";
     resetFilters();
     render();
   }

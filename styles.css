@@ -320,6 +320,17 @@ select:disabled {
   font-size: 1.16rem;
 }
 
+.card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-actions .btn {
+  flex: 1 1 140px;
+}
+
 .sport-card {
   border-top: 4px solid var(--primary);
 }
@@ -462,6 +473,15 @@ select:focus {
   background: #e8eef5;
   color: #263544;
   font-weight: 900;
+}
+
+.icon-btn.danger-icon {
+  background: rgba(182, 59, 72, 0.12);
+  color: var(--danger);
+}
+
+.icon-btn.danger-icon:hover {
+  background: rgba(182, 59, 72, 0.2);
 }
 
 .tabs {
