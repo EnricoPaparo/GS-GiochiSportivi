@@ -455,6 +455,20 @@ select:disabled {
   flex: 1 1 140px;
 }
 
+.text-link {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 900;
+  text-align: left;
+}
+
+.text-link:hover {
+  color: #8ff7dc;
+  text-decoration: underline;
+}
+
 .sport-card {
   border-top: 4px solid var(--primary);
   min-width: 210px;
@@ -508,6 +522,51 @@ select:disabled {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--primary), var(--green));
+}
+
+.section-standings-grid {
+  display: grid;
+  grid-auto-columns: minmax(340px, 1fr);
+  grid-auto-flow: column;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.section-standing {
+  display: grid;
+  gap: 10px;
+  min-width: 340px;
+}
+
+.compact-rank-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.compact-rank-table th,
+.compact-rank-table td {
+  height: 52px;
+  padding: 8px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.compact-rank-table th:first-child,
+.compact-rank-table td:first-child {
+  width: 116px;
+}
+
+.compact-rank-table th:last-child,
+.compact-rank-table td:last-child {
+  width: 82px;
+}
+
+.empty-rank-row td {
+  color: transparent;
 }
 
 .meta {

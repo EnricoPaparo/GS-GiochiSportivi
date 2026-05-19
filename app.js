@@ -38,6 +38,7 @@ const state = {
   sportTab: "proves",
   speedPhase: "qualifications",
   modalTeamId: null,
+  teamInfoId: null,
   profileOpen: false,
   randomOrder: false,
   filters: {
@@ -120,6 +121,9 @@ function migrateDb(source) {
     sport.attempts = Number(sport.attempts || 1);
     sport.finalists = Number(sport.finalists || 6);
   });
+  merged.sportsDays.forEach((day) => {
+    day.maxSectionScore = normalizePositiveInteger(day.maxSectionScore, 8);
+  });
   if (!source.meta?.participantsScopedBySport || merged.participants.some((participant) => !participant.sportId)) {
     merged.participants = [];
     merged.relayTeams = [];
@@ -157,6 +161,11 @@ function isLockedUser(userOrId) {
 
 function saveDb() {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function normalizePositiveInteger(value, fallback = 1) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function setSession(user) {
@@ -515,6 +524,7 @@ function renderDay() {
         </div>
       ` : `<div class="empty">Configura almeno uno sport per questa giornata.</div>`}
     </section>
+    ${sports.length ? renderSectionStandings(day, sportWidgets) : ""}
     ${sports.length ? renderIncompleteSummary(day, sportWidgets) : ""}
   `;
 }
@@ -587,6 +597,56 @@ function renderIncompleteSummary(day, sportWidgets) {
   `;
 }
 
+function renderSectionStandings(day, sportWidgets) {
+  const standings = computeSectionStandings(day, sportWidgets);
+  const maxRows = Math.max(0, ...standings.map(({ rows }) => rows.length));
+  return `
+    <section class="panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Classifica sezioni</p>
+          <h2>Punti per anno</h2>
+        </div>
+      </div>
+      <div class="section-standings-grid">
+        ${standings.map(({ year, rows }) => `
+          <section class="section-standing">
+            <div class="row-head compact">
+              <h3>Anno ${escapeHtml(year.label)}</h3>
+            </div>
+            <div class="table-wrap">
+              <table class="compact-rank-table">
+                <thead>
+                  <tr>
+                    <th>Posizione</th>
+                    <th>Sezione</th>
+                    <th>Punti</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${maxRows ? Array.from({ length: maxRows }, (_, index) => rows[index] || null).map((row, index) => row ? `
+                    <tr>
+                      <td><span class="rank">${index + 1}</span></td>
+                      <td>${escapeHtml(row.section)}</td>
+                      <td><strong>${row.points}</strong></td>
+                    </tr>
+                  ` : `
+                    <tr class="empty-rank-row" aria-hidden="true">
+                      <td>&nbsp;</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  `).join("") : `<tr><td colspan="3" class="muted">Nessun punto assegnato.</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderDayEdit() {
   const day = getDay(state.selectedDayId);
   return `
@@ -630,6 +690,10 @@ function renderDayAdminConfig(day) {
           <div class="field">
             <label>Ora di fine</label>
             <input name="endTime" type="time" value="${escapeHtml(day.endTime)}" required>
+          </div>
+          <div class="field">
+            <label>Punteggio massimo classifica sezioni</label>
+            <input name="maxSectionScore" type="number" min="1" step="1" value="${normalizePositiveInteger(day.maxSectionScore, 8)}" required>
           </div>
         </div>
         <div class="inline" style="margin-top: 14px;">
@@ -896,9 +960,9 @@ function renderRelayProves(sport) {
   if (!years.length) return `<div class="empty">Configura anni e sezioni prima di inserire squadre.</div>`;
   ensureValidFilter(years, true);
   if (!state.filters.sectionId) return `<div>${renderContextSelectors(true)}<div class="empty">Aggiungi almeno una sezione per l'anno selezionato.</div></div>`;
-  const teams = db.relayTeams
+  const teams = orderRelayTeams(db.relayTeams
     .filter((team) => team.dayId === state.selectedDayId && team.sportId === sport.id && team.yearId === state.filters.yearId && team.sectionId === state.filters.sectionId && team.sex === state.filters.sex)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  );
   const pool = getParticipantsForContext();
   return `
     ${renderContextSelectors(true)}
@@ -908,7 +972,6 @@ function renderRelayProves(sport) {
           <h3>Partecipanti staffetta</h3>
           <p class="fineprint">Gli iscritti sono specifici per Staffetta, anno, sezione e sesso selezionati.</p>
         </div>
-        <button class="btn secondary tiny" data-action="toggle-random">${state.randomOrder ? "Ordina per cognome" : "Ordine casuale"}</button>
       </div>
       <form class="inline" data-action="add-participant">
         <div class="field">
@@ -929,7 +992,7 @@ function renderRelayProves(sport) {
           <h3>Squadre e risultati</h3>
           <p class="fineprint">I partecipanti delle squadre si modificano dal pulsante su ogni riga.</p>
         </div>
-        <button class="btn secondary tiny" data-action="scroll-relay-participants">Vai ai partecipanti</button>
+        <button class="btn secondary tiny" data-action="toggle-random">${state.randomOrder ? "Ordina squadre per nome" : "Ordine casuale squadre"}</button>
       </div>
       <form class="inline" data-action="add-team" data-sport-id="${sport.id}" style="margin-bottom: 14px;">
         <div class="field">
@@ -945,7 +1008,9 @@ function renderRelayProves(sport) {
 }
 
 function renderRelayParticipantTable(participants) {
-  const ordered = orderParticipants(participants);
+  const ordered = [...participants].sort((a, b) =>
+    a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)
+  );
   return `
     <div class="table-wrap" style="margin-top: 14px;">
       <table>
@@ -1078,7 +1143,7 @@ function renderSpeedFinals(sport) {
   const years = getYears(state.selectedDayId);
   if (!years.length) return `<div class="empty">Configura gli anni prima di gestire le finali.</div>`;
   ensureValidFilter(years, false);
-  const finalists = getSpeedFinalists(sport, state.filters.yearId, state.filters.sex);
+  const finalists = getEffectiveSpeedFinalists(sport, state.filters.yearId, state.filters.sex);
   return `
     ${renderContextSelectors(false)}
     ${finalists.length ? `
@@ -1141,16 +1206,62 @@ function renderRankings(sport) {
         </thead>
         <tbody>
           ${rows.map((row) => `
-            <tr>
-              <td>${row.position ? `<span class="rank">${row.position}</span>` : `<span class="muted">-</span>`}</td>
-              <td>${escapeHtml(row.name)}</td>
-              <td>${escapeHtml(row.section || "")}</td>
-              <td>${row.resultText}</td>
-              <td>${escapeHtml(row.statusText)}</td>
+              <tr>
+                <td>${row.position ? `<span class="rank">${row.position}</span>` : `<span class="muted">-</span>`}</td>
+                <td>${renderRankingNameCell(row, sport)}</td>
+                <td>${escapeHtml(row.section || "")}</td>
+                <td>${row.resultText}</td>
+                <td>${escapeHtml(row.statusText)}</td>
             </tr>
           `).join("") || `<tr><td colspan="5" class="muted">Nessun risultato disponibile.</td></tr>`}
         </tbody>
       </table>
+    </div>
+    ${state.teamInfoId ? renderTeamInfoModal(state.teamInfoId) : ""}
+  `;
+}
+
+function renderRankingNameCell(row, sport) {
+  if (sport.name !== "Staffetta") return escapeHtml(row.name);
+  return `<button class="text-link" data-action="open-team-info" data-team-id="${row.id}">${escapeHtml(row.name)}</button>`;
+}
+
+function renderTeamInfoModal(teamId) {
+  const team = db.relayTeams.find((item) => item.id === teamId);
+  if (!team) return "";
+  const members = team.participantIds
+    .map((participantId) => db.participants.find((participant) => participant.id === participantId))
+    .filter(Boolean)
+    .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+  return `
+    <div class="modal-backdrop" data-action="close-team-info">
+      <section class="modal team-modal" role="dialog" aria-modal="true" aria-label="Partecipanti squadra" data-modal-panel>
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Staffetta</p>
+            <h2>${escapeHtml(team.name)}</h2>
+          </div>
+          <button class="icon-btn" title="Chiudi" data-action="close-team-info">×</button>
+        </div>
+        <div class="table-wrap">
+          <table class="team-picker-table">
+            <thead>
+              <tr>
+                <th>Cognome</th>
+                <th>Nome</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${members.length ? members.map((participant) => `
+                <tr>
+                  <td>${escapeHtml(participant.lastName)}</td>
+                  <td>${escapeHtml(participant.firstName)}</td>
+                </tr>
+              `).join("") : `<tr><td colspan="2" class="muted">Nessun partecipante assegnato.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   `;
 }
@@ -1224,7 +1335,7 @@ function getRelayTeamsForSport(sport) {
 
 function getSpeedFinalistParticipants(sport) {
   return getYears(sport.dayId).flatMap((year) =>
-    SEXES.flatMap((sex) => getSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant))
+    SEXES.flatMap((sex) => getEffectiveSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant))
   );
 }
 
@@ -1268,11 +1379,44 @@ function getMissingProofRows(dayId, sportWidgets) {
     );
 }
 
+function computeSectionStandings(day, sportWidgets) {
+  const maxScore = normalizePositiveInteger(day.maxSectionScore, 8);
+  return getYears(day.id).map((year) => {
+    const totals = new Map(getSections(year.id).map((section) => [section.id, {
+      section: section.label,
+      points: 0
+    }]));
+
+    sportWidgets.forEach((widget) => {
+      SEXES.forEach((sex) => {
+        const rows = computeRanking(widget.sport, year.id, sex.value, widget.phase);
+        rows.forEach((row) => {
+          if (!row.position) return;
+          const sectionId = getRankingRowSectionId(row, widget.sport);
+          if (!sectionId || !totals.has(sectionId)) return;
+          const points = Math.max(maxScore - row.position + 1, 0);
+          totals.get(sectionId).points += points;
+        });
+      });
+    });
+
+    const rows = [...totals.values()].sort((a, b) => b.points - a.points || naturalCompare(a.section, b.section));
+    return { year, rows };
+  });
+}
+
+function getRankingRowSectionId(row, sport) {
+  if (sport.name === "Staffetta") {
+    return db.relayTeams.find((team) => team.id === row.id)?.sectionId || "";
+  }
+  return db.participants.find((participant) => participant.id === row.id)?.sectionId || "";
+}
+
 function getIncompleteSectionRows(dayId, widget) {
   const { sport, phase, label } = widget;
   if (sport.name === "Velocita" && phase === "finals") {
     return getYears(dayId).flatMap((year) => SEXES.map((sex) => {
-      const finalists = getSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant);
+      const finalists = getEffectiveSpeedFinalists(sport, year.id, sex.value).map((item) => item.participant);
       return {
         sport: label,
         year: year.label,
@@ -1335,6 +1479,12 @@ function orderParticipants(participants) {
   const sorted = [...participants].sort((a, b) =>
     a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)
   );
+  if (!state.randomOrder) return sorted;
+  return sorted.map((item) => ({ item, sort: Math.random() })).sort((a, b) => a.sort - b.sort).map(({ item }) => item);
+}
+
+function orderRelayTeams(teams) {
+  const sorted = [...teams].sort((a, b) => naturalCompare(a.name, b.name));
   if (!state.randomOrder) return sorted;
   return sorted.map((item) => ({ item, sort: Math.random() })).sort((a, b) => a.sort - b.sort).map(({ item }) => item);
 }
@@ -1479,12 +1629,33 @@ function bestParticipantResult(sport, participant, phase) {
 }
 
 function getSpeedFinalists(sport, yearId, sex) {
+  return getSpeedQualifiedCandidates(sport, yearId, sex).slice(0, sport.finalists);
+}
+
+function getSpeedQualifiedCandidates(sport, yearId, sex) {
   return db.participants
     .filter((participant) => participant.dayId === sport.dayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
     .map((participant) => ({ participant, best: bestParticipantResult(sport, participant, "qualification").value }))
     .filter((item) => Number.isFinite(item.best))
-    .sort((a, b) => a.best - b.best || a.participant.lastName.localeCompare(b.participant.lastName))
-    .slice(0, sport.finalists);
+    .sort((a, b) => a.best - b.best || a.participant.lastName.localeCompare(b.participant.lastName));
+}
+
+function isFinalWithdrawnOrDisqualified(sport, participantId) {
+  const result = getFinalResult(sport.id, participantId);
+  return result?.status === "retired";
+}
+
+function getEffectiveSpeedFinalists(sport, yearId, sex) {
+  const selected = [];
+  let activeCount = 0;
+
+  for (const item of getSpeedQualifiedCandidates(sport, yearId, sex)) {
+    selected.push(item);
+    if (!isFinalWithdrawnOrDisqualified(sport, item.participant.id)) activeCount += 1;
+    if (activeCount >= sport.finalists) break;
+  }
+
+  return selected;
 }
 
 function computeRanking(sport, yearId, sex, phase = null) {
@@ -1543,18 +1714,20 @@ function computeRelayRanking(sport, yearId, sex) {
 }
 
 function computeSpeedRanking(sport, yearId, sex) {
-  const all = db.participants.filter((participant) => participant.dayId === state.selectedDayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex);
-  const finalistIds = getSpeedFinalists(sport, yearId, sex).map((item) => item.participant.id);
+  const all = db.participants.filter((participant) => participant.dayId === sport.dayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex);
+  const finalistIds = getEffectiveSpeedFinalists(sport, yearId, sex).map((item) => item.participant.id);
   const finalistRows = finalistIds.map((participantId) => {
     const participant = all.find((item) => item.id === participantId);
     const final = getFinalResult(sport.id, participantId);
+    const qualification = bestParticipantResult(sport, participant, "qualification");
     return {
       id: participant.id,
       name: `${participant.lastName} ${participant.firstName}`,
       section: getSection(participant.sectionId)?.label || "",
       raw: final?.status === "value" && final.value !== "" ? Number(final.value) : null,
       status: final?.status || "missing",
-      finalist: true
+      finalist: true,
+      qualificationRaw: qualification.value
     };
   });
   const nonFinalistRows = all
@@ -1572,13 +1745,17 @@ function computeSpeedRanking(sport, yearId, sex) {
     });
 
   const validFinalists = finalistRows.filter((row) => Number.isFinite(row.raw)).sort((a, b) => a.raw - b.raw);
-  const invalidFinalists = finalistRows.filter((row) => !Number.isFinite(row.raw));
+  const activeFinalistsWithoutTime = finalistRows
+    .filter((row) => !Number.isFinite(row.raw) && row.status !== "retired" && row.status !== "disqualified")
+    .sort((a, b) => a.qualificationRaw - b.qualificationRaw);
+  const withdrawnFinalists = finalistRows.filter((row) => row.status === "retired" || row.status === "disqualified");
   const validNonFinalists = nonFinalistRows.filter((row) => Number.isFinite(row.raw)).sort((a, b) => a.raw - b.raw);
   const invalidNonFinalists = nonFinalistRows.filter((row) => !Number.isFinite(row.raw));
 
-  const positionedFinalists = validFinalists.map((row, index) => presentRankRow(row, index + 1, "time"));
-  const positionedNonFinalists = validNonFinalists.map((row, index) => presentRankRow(row, sport.finalists + index + 1, "time"));
-  const invalid = [...invalidFinalists, ...invalidNonFinalists].map((row) => presentRankRow(row, null, "time"));
+  const activeFinalists = [...validFinalists, ...activeFinalistsWithoutTime].slice(0, sport.finalists);
+  const positionedFinalists = activeFinalists.map((row, index) => presentRankRow(row, index + 1, "time"));
+  const positionedNonFinalists = validNonFinalists.map((row, index) => presentRankRow(row, positionedFinalists.length + index + 1, "time"));
+  const invalid = [...withdrawnFinalists, ...invalidNonFinalists].map((row) => presentRankRow(row, null, "time"));
   return [...positionedFinalists, ...positionedNonFinalists, ...invalid];
 }
 
@@ -1715,6 +1892,7 @@ app.addEventListener("submit", (event) => {
       startTime: data.startTime,
       endTime: data.endTime,
       address: data.address.trim(),
+      maxSectionScore: 8,
       createdAt: new Date().toISOString()
     });
     const selectedSports = new FormData(form).getAll("sports").map(normalizeSportName);
@@ -1727,12 +1905,18 @@ app.addEventListener("submit", (event) => {
 
   if (action === "update-day" && canAdmin()) {
     const day = getDay(form.dataset.dayId);
+    const maxScoreValue = String(data.maxSectionScore || "").trim();
+    if (!/^[1-9]\d*$/.test(maxScoreValue)) {
+      return toast("Il punteggio massimo deve essere un numero intero positivo.");
+    }
+    const maxSectionScore = Number.parseInt(maxScoreValue, 10);
     Object.assign(day, {
       title: data.title.trim(),
       date: data.date,
       startTime: data.startTime,
       endTime: data.endTime,
-      address: data.address.trim()
+      address: data.address.trim(),
+      maxSectionScore
     });
     saveDb();
     toast("Giornata aggiornata.");
@@ -1813,6 +1997,7 @@ app.addEventListener("click", (event) => {
   if (action === "go-dashboard") {
     state.view = "dashboard";
     state.modalTeamId = null;
+    state.teamInfoId = null;
     state.profileOpen = false;
     render();
   }
@@ -1836,6 +2021,7 @@ app.addEventListener("click", (event) => {
     state.selectedDayId = target.dataset.dayId;
     state.view = "day";
     state.modalTeamId = null;
+    state.teamInfoId = null;
     state.profileOpen = false;
     resetFilters();
     render();
@@ -1845,6 +2031,7 @@ app.addEventListener("click", (event) => {
     state.selectedDayId = target.dataset.dayId;
     state.view = "day-edit";
     state.modalTeamId = null;
+    state.teamInfoId = null;
     resetFilters();
     render();
   }
@@ -1855,6 +2042,7 @@ app.addEventListener("click", (event) => {
     state.sportTab = isGuest() ? "rankings" : "proves";
     state.speedPhase = target.dataset.speedPhase || "qualifications";
     state.modalTeamId = null;
+    state.teamInfoId = null;
     resetFilters();
     render();
   }
@@ -1862,12 +2050,14 @@ app.addEventListener("click", (event) => {
   if (action === "back-day") {
     state.view = "day";
     state.modalTeamId = null;
+    state.teamInfoId = null;
     render();
   }
 
   if (action === "sport-tab") {
     state.sportTab = target.dataset.tab;
     state.modalTeamId = null;
+    state.teamInfoId = null;
     render();
   }
 
@@ -1888,6 +2078,17 @@ app.addEventListener("click", (event) => {
   if (action === "close-team-modal") {
     if (event.target.closest("[data-modal-panel]") && !event.target.closest(".icon-btn")) return;
     state.modalTeamId = null;
+    render();
+  }
+
+  if (action === "open-team-info") {
+    state.teamInfoId = target.dataset.teamId;
+    render();
+  }
+
+  if (action === "close-team-info") {
+    if (event.target.closest("[data-modal-panel]") && !event.target.closest(".icon-btn")) return;
+    state.teamInfoId = null;
     render();
   }
 
