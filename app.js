@@ -515,7 +515,6 @@ function renderDay() {
       <div class="section-head">
         <div>
           <p class="eyebrow">Sport</p>
-          <h2>Seleziona una prova</h2>
         </div>
       </div>
       ${sports.length ? `
@@ -566,7 +565,6 @@ function renderIncompleteSummary(day, sportWidgets) {
       <div class="section-head">
         <div>
           <p class="eyebrow">Prove mancanti</p>
-          <h2>Sezioni da completare</h2>
         </div>
       </div>
       <div class="table-wrap">
@@ -605,7 +603,6 @@ function renderSectionStandings(day, sportWidgets) {
       <div class="section-head">
         <div>
           <p class="eyebrow">Classifica sezioni</p>
-          <h2>Punti per anno</h2>
         </div>
       </div>
       <div class="section-standings-grid">
@@ -2374,8 +2371,14 @@ function renderTopbar() {
           </button>
           ${state.profileOpen ? `
             <div class="profile-popover">
-              <strong>${escapeHtml(state.user.username)}</strong>
-              <span>${escapeHtml(state.user.role)}</span>
+              <div class="profile-line">
+                <span>User:</span>
+                <strong>${escapeHtml(state.user.username)}</strong>
+              </div>
+              <div class="profile-line">
+                <span>Utenza:</span>
+                <strong>${escapeHtml(state.user.role)}</strong>
+              </div>
               <button class="btn ghost tiny" data-action="logout">Esci</button>
             </div>
           ` : ""}
