@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0ea5a4"/>
+      <stop offset="1" stop-color="#006dff"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="18" y1="43" x2="48" y2="18" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9ff64"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <path d="M14 45c9-8 19-11 36-9" fill="none" stroke="#d9ff64" stroke-width="4" stroke-linecap="round"/>
+  <path d="M43 13l-7 18 14-4-18 24 5-19-13 3z" fill="url(#spark)"/>
+  <text x="14" y="31" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="900" letter-spacing="-1">GS</text>
+</svg>

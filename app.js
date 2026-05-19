@@ -444,13 +444,15 @@ function renderCreateDayForm() {
           <label>Indirizzo</label>
           <input name="address" required placeholder="Palestra o campo">
         </div>
-        <div class="field">
-          <label>Ora di inizio</label>
-          <input name="startTime" type="time" value="09:00" required>
-        </div>
-        <div class="field">
-          <label>Ora di fine</label>
-          <input name="endTime" type="time" value="13:00" required>
+        <div class="time-field-row">
+          <div class="field">
+            <label>Ora di inizio</label>
+            <input name="startTime" type="time" value="09:00" required>
+          </div>
+          <div class="field">
+            <label>Ora di fine</label>
+            <input name="endTime" type="time" value="13:00" required>
+          </div>
         </div>
       </div>
       <p class="inline-label" style="margin-top: 12px;">Sport presenti</p>
@@ -680,13 +682,15 @@ function renderDayAdminConfig(day) {
             <label>Indirizzo</label>
             <input name="address" value="${escapeHtml(day.address)}" required>
           </div>
-          <div class="field">
-            <label>Ora di inizio</label>
-            <input name="startTime" type="time" value="${escapeHtml(day.startTime)}" required>
-          </div>
-          <div class="field">
-            <label>Ora di fine</label>
-            <input name="endTime" type="time" value="${escapeHtml(day.endTime)}" required>
+          <div class="time-field-row">
+            <div class="field">
+              <label>Ora di inizio</label>
+              <input name="startTime" type="time" value="${escapeHtml(day.startTime)}" required>
+            </div>
+            <div class="field">
+              <label>Ora di fine</label>
+              <input name="endTime" type="time" value="${escapeHtml(day.endTime)}" required>
+            </div>
           </div>
           <div class="field">
             <label>Punteggio massimo classifica sezioni</label>
