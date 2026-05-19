@@ -454,6 +454,10 @@ function renderCreateDayForm() {
             <input name="endTime" type="time" value="13:00" required>
           </div>
         </div>
+        <div class="field">
+          <label>Punteggio massimo classifica sezioni</label>
+          <input name="maxSectionScore" type="number" min="1" step="1" value="8" required>
+        </div>
       </div>
       <p class="inline-label" style="margin-top: 12px;">Sport presenti</p>
       <div class="check-grid">
@@ -1885,6 +1889,11 @@ app.addEventListener("submit", (event) => {
   }
 
   if (action === "create-day" && canAdmin()) {
+    const maxScoreValue = String(data.maxSectionScore || "").trim();
+    if (!/^[1-9]\d*$/.test(maxScoreValue)) {
+      return toast("Il punteggio massimo deve essere un numero intero positivo.");
+    }
+    const maxSectionScore = Number.parseInt(maxScoreValue, 10);
     const dayId = id("day");
     db.sportsDays.push({
       id: dayId,
@@ -1893,7 +1902,7 @@ app.addEventListener("submit", (event) => {
       startTime: data.startTime,
       endTime: data.endTime,
       address: data.address.trim(),
-      maxSectionScore: 8,
+      maxSectionScore,
       createdAt: new Date().toISOString()
     });
     const selectedSports = new FormData(form).getAll("sports").map(normalizeSportName);
