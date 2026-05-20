@@ -4,29 +4,10 @@ import { escapeHtml } from "./utils/html.js";
 import { id } from "./utils/ids.js";
 import { formatMeasure, normalizePositiveInteger } from "./utils/numbers.js";
 import { compareSportsDaysByDateDesc, naturalCompare } from "./utils/sorting.js";
-import { getDb, getSession, saveDb as persistDb, saveSession, clearSession } from "./data/repository.js";
-import { LOCKED_ADMIN_ID } from "./data/schema.js";
-
-const state = {
-  view: "auth",
-  user: null,
-  selectedDayId: null,
-  selectedSportId: null,
-  dashboardSection: "days",
-  sportTab: "proves",
-  speedPhase: "qualifications",
-  modalTeamId: null,
-  teamInfoId: null,
-  profileOpen: false,
-  randomOrder: false,
-  filters: {
-    yearId: "",
-    sectionId: "",
-    sex: "M"
-  }
-};
-
-let db = getDb();
+import { saveDb as persistDb } from "./data/repository.js";
+import { db, state } from "./state.js";
+import { restoreSession, setSession, updateSession } from "./auth/authService.js";
+import { canAdmin, canEditResults, isGuest, isLockedUser } from "./auth/permissions.js";
 
 const app = document.querySelector("#app");
 
@@ -38,40 +19,8 @@ function displaySportName(name) {
   return name === "Velocita" ? "Velocità" : name;
 }
 
-function isLockedUser(userOrId) {
-  const user = typeof userOrId === "string" ? db.users.find((item) => item.id === userOrId) : userOrId;
-  return user?.id === LOCKED_ADMIN_ID || user?.locked === true;
-}
-
 function saveDb() {
   persistDb(db);
-}
-
-function setSession(user) {
-  state.user = user ? { id: user.id, username: user.username, role: user.role } : null;
-  if (state.user) saveSession(state.user);
-  else clearSession();
-}
-
-function restoreSession() {
-  const session = getSession();
-  if (!session) return;
-  if (session.role === ROLES.GUEST || db.users.some((user) => user.id === session.id)) {
-    state.user = session;
-    state.view = "dashboard";
-  }
-}
-
-function canAdmin() {
-  return state.user?.role === ROLES.ADMIN;
-}
-
-function canEditResults() {
-  return state.user?.role === ROLES.ADMIN || state.user?.role === ROLES.TEACHER;
-}
-
-function isGuest() {
-  return state.user?.role === ROLES.GUEST;
 }
 
 function toast(message) {
@@ -2208,8 +2157,7 @@ function updateUserField(target) {
   }
   user[field] = next;
   if (user.id === state.user.id && field === "username") {
-    state.user.username = next;
-    saveSession(state.user);
+    updateSession({ username: next });
   }
   saveDb();
   toast("Utente aggiornato.");
