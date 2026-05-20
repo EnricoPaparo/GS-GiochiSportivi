@@ -61,7 +61,7 @@ export function bindFirestoreParticipantsSyncHandlers(app, render) {
       });
     }
 
-    if (form.dataset.action === "create-relay-team") {
+    if (form.dataset.action === "add-team") {
       const existingIds = new Set(db.relayTeams.map((team) => team.id));
 
       defer(async () => {
@@ -101,7 +101,7 @@ export function bindFirestoreParticipantsSyncHandlers(app, render) {
       });
     }
 
-    if (target.dataset.action === "delete-relay-team") {
+    if (target.dataset.action === "delete-team") {
       const teamId = target.dataset.teamId;
 
       defer(async () => {
