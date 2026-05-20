@@ -1,6 +1,7 @@
 import { restoreSession, setSession } from "./auth/authService.js";
 import { listenFirebaseAuth, logoutFirebaseUser, mapFirebaseUserToSession } from "./auth/firebaseAuthService.js";
 import { getFirebaseUserProfile } from "./auth/firebaseUserService.js";
+import { bootstrapFirestoreFirstDb } from "./data/firestoreBootstrapRepository.js";
 import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { bindFirestoreBackupHandlers } from "./events/firestoreBackupHandlers.js";
@@ -8,6 +9,7 @@ import { bindFirestoreSportsDaysSyncHandlers } from "./events/firestoreSportsDay
 import { bindFirestoreSportsSyncHandlers } from "./events/firestoreSportsSyncHandlers.js";
 import { bindFirestoreSchoolStructureSyncHandlers } from "./events/firestoreSchoolStructureSyncHandlers.js";
 import { bindFirestoreParticipantsSyncHandlers } from "./events/firestoreParticipantsSyncHandlers.js";
+import { bindFirestoreResultsSyncHandlers } from "./events/firestoreResultsSyncHandlers.js";
 import { getDay } from "./domain/days.js";
 import { displaySportName } from "./domain/sports.js";
 import { state } from "./state.js";
@@ -46,25 +48,33 @@ async function activateFirebaseSession(firebaseUser) {
   render();
 }
 
-restoreSession();
-listenFirebaseAuth(async (firebaseUser) => {
-  if (!firebaseUser) {
-    if (state.user?.provider === "firebase") {
-      setSession(null);
-      state.view = "auth";
-      render();
+async function initializeApplication() {
+  await bootstrapFirestoreFirstDb();
+
+  restoreSession();
+
+  listenFirebaseAuth(async (firebaseUser) => {
+    if (!firebaseUser) {
+      if (state.user?.provider === "firebase") {
+        setSession(null);
+        state.view = "auth";
+        render();
+      }
+      return;
     }
-    return;
-  }
 
-  await activateFirebaseSession(firebaseUser);
-});
+    await activateFirebaseSession(firebaseUser);
+  });
 
-bindEventHandlers(app, render);
-bindFirestoreBackupHandlers(app, render);
-bindFirestoreSportsDaysSyncHandlers(app, render);
-bindFirestoreSportsSyncHandlers(app, render);
-bindFirestoreSchoolStructureSyncHandlers(app, render);
-bindFirestoreParticipantsSyncHandlers(app, render);
+  bindEventHandlers(app, render);
+  bindFirestoreBackupHandlers(app, render);
+  bindFirestoreSportsDaysSyncHandlers(app, render);
+  bindFirestoreSportsSyncHandlers(app, render);
+  bindFirestoreSchoolStructureSyncHandlers(app, render);
+  bindFirestoreParticipantsSyncHandlers(app, render);
+  bindFirestoreResultsSyncHandlers(app, render);
 
-render();
+  render();
+}
+
+initializeApplication();
