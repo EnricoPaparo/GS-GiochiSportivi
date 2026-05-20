@@ -43,29 +43,3 @@ export async function loadRemoteDb() {
 
   return migrateDb(remoteDb);
 }
-
-// Low-level Firestore API used by the main repository.
-// The async bootstrap loads remote data before the first render.
-export function getDb() {
-  throw new Error("firestoreRepository non e ancora il repository principale: usa loadRemoteDb() per il ripristino manuale");
-}
-
-export function saveDb() {
-  throw new Error("firestoreRepository non e ancora il repository principale: usa saveRemoteDb(db) per il backup manuale");
-}
-
-export function resetDb() {
-  throw new Error("firestoreRepository non e ancora il repository principale");
-}
-
-export function getSession() {
-  throw new Error("Le sessioni restano gestite dal repository principale");
-}
-
-export function saveSession() {
-  throw new Error("Le sessioni restano gestite dal repository principale");
-}
-
-export function clearSession() {
-  throw new Error("Le sessioni restano gestite dal repository principale");
-}

@@ -1,8 +1,9 @@
 import { saveRemoteDb } from "./firestoreRepository.js";
 import { migrateDb } from "./migrations.js";
-import { emptyDb } from "./schema.js";
+import { emptyDb, SESSION_KEY } from "./schema.js";
 
 export function getDb() {
+  // Runtime shell only: firestoreBootstrapRepository replaces it with remote data before render.
   return migrateDb(emptyDb());
 }
 
@@ -22,7 +23,7 @@ export async function resetDb() {
 // Session persistence can stay browser-local.
 export function getSession() {
   try {
-    return JSON.parse(localStorage.getItem("giornateSportive.session.v1"));
+    return JSON.parse(localStorage.getItem(SESSION_KEY));
   } catch {
     return null;
   }
@@ -30,11 +31,11 @@ export function getSession() {
 
 export function saveSession(session) {
   localStorage.setItem(
-    "giornateSportive.session.v1",
+    SESSION_KEY,
     JSON.stringify(session)
   );
 }
 
 export function clearSession() {
-  localStorage.removeItem("giornateSportive.session.v1");
+  localStorage.removeItem(SESSION_KEY);
 }

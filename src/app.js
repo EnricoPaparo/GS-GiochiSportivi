@@ -5,23 +5,23 @@ import { bootstrapFirestoreFirstDb } from "./data/firestoreBootstrapRepository.j
 import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { bindFirestoreBackupHandlers } from "./events/firestoreBackupHandlers.js";
-import { bindFirestoreSportsDaysSyncHandlers } from "./events/firestoreSportsDaysSyncHandlers.js";
-import { bindFirestoreSportsSyncHandlers } from "./events/firestoreSportsSyncHandlers.js";
-import { bindFirestoreSchoolStructureSyncHandlers } from "./events/firestoreSchoolStructureSyncHandlers.js";
-import { bindFirestoreParticipantsSyncHandlers } from "./events/firestoreParticipantsSyncHandlers.js";
-import { bindFirestoreResultsSyncHandlers } from "./events/firestoreResultsSyncHandlers.js";
-import { getDay } from "./domain/days.js";
-import { displaySportName } from "./domain/sports.js";
 import { state } from "./state.js";
-
-// Temporary compatibility bridge for render modules split from the legacy app.js.
-// TODO: remove after importing these dependencies directly in renderSport.js.
-globalThis.getDay = getDay;
-globalThis.displaySportName = displaySportName;
 
 const app = document.querySelector("#app");
 function render() {
   renderUi(app);
+}
+
+function renderBootstrapError() {
+  app.innerHTML = `
+    <main class="auth-page">
+      <section class="auth-panel">
+        <p class="eyebrow">Firestore non disponibile</p>
+        <h1>Impossibile caricare i dati</h1>
+        <p>Controlla la connessione e ricarica la pagina. Nessun dato locale verra usato come fallback.</p>
+      </section>
+    </main>
+  `;
 }
 
 async function activateFirebaseSession(firebaseUser) {
@@ -49,7 +49,11 @@ async function activateFirebaseSession(firebaseUser) {
 }
 
 async function initializeApplication() {
-  await bootstrapFirestoreFirstDb();
+  const bootstrap = await bootstrapFirestoreFirstDb();
+  if (bootstrap.error) {
+    renderBootstrapError();
+    return;
+  }
 
   restoreSession();
 
@@ -68,11 +72,6 @@ async function initializeApplication() {
 
   bindEventHandlers(app, render);
   bindFirestoreBackupHandlers(app, render);
-  bindFirestoreSportsDaysSyncHandlers(app, render);
-  bindFirestoreSportsSyncHandlers(app, render);
-  bindFirestoreSchoolStructureSyncHandlers(app, render);
-  bindFirestoreParticipantsSyncHandlers(app, render);
-  bindFirestoreResultsSyncHandlers(app, render);
 
   render();
 }

@@ -1,6 +1,5 @@
 import { ROLES } from "../constants.js";
 
-export const DB_KEY = "giornateSportive.db.v1";
 export const SESSION_KEY = "giornateSportive.session.v1";
 
 export const LOCKED_ADMIN_ID = "locked_admin_root";
