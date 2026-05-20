@@ -8,14 +8,17 @@ import { saveDb as persistDb } from "./data/repository.js";
 import { db, state } from "./state.js";
 import { restoreSession, setSession, updateSession } from "./auth/authService.js";
 import { canAdmin, canEditResults, isGuest, isLockedUser } from "./auth/permissions.js";
+import { cleanupDay, getDay, getSection, getSections, getYears } from "./domain/days.js";
+import { addDefaultSports, createSport, deleteSport, displaySportName, getDaySportWidgets, getSport, normalizeSportName } from "./domain/sports.js";
+import { bestParticipantResult, getAttempt, getFinalResult, getTeamResult, upsertAttempt, upsertFinalResult, upsertTeamResult } from "./domain/results.js";
 
 const app = document.querySelector("#app");
 
-function normalizeSportName(name) {
+function legacyNormalizeSportName(name) {
   return name === "Velocità" ? "Velocita" : name;
 }
 
-function displaySportName(name) {
+function legacyDisplaySportName(name) {
   return name === "Velocita" ? "Velocità" : name;
 }
 
@@ -355,16 +358,6 @@ function renderDay() {
     ${sports.length ? renderSectionStandings(day, sportWidgets) : ""}
     ${sports.length ? renderIncompleteSummary(day, sportWidgets) : ""}
   `;
-}
-
-function getDaySportWidgets(sports) {
-  return sports.flatMap((sport) => {
-    if (sport.name !== "Velocita") return [{ sport, label: displaySportName(sport.name), phase: null }];
-    return [
-      { sport, label: "Velocita Qualifiche", phase: "qualifications" },
-      { sport, label: "Velocita Finali", phase: "finals" }
-    ];
-  });
 }
 
 function renderSportDayCard(widget) {
@@ -1094,30 +1087,6 @@ function renderTeamInfoModal(teamId) {
   `;
 }
 
-function getDay(dayId) {
-  return db.sportsDays.find((day) => day.id === dayId);
-}
-
-function getSport(sportId) {
-  return db.sports.find((sport) => sport.id === sportId);
-}
-
-function getYears(dayId) {
-  return db.years
-    .filter((year) => year.dayId === dayId)
-    .sort((a, b) => naturalCompare(a.label, b.label));
-}
-
-function getSections(yearId) {
-  return db.sections
-    .filter((section) => section.yearId === yearId)
-    .sort((a, b) => naturalCompare(a.label, b.label));
-}
-
-function getSection(sectionId) {
-  return db.sections.find((section) => section.id === sectionId);
-}
-
 function countParticipants({ dayId = state.selectedDayId, sportId, yearId, sectionId, sex } = {}) {
   return db.participants.filter((participant) =>
     (!dayId || participant.dayId === dayId) &&
@@ -1338,102 +1307,6 @@ function statusLabel(status) {
   return "Valido";
 }
 
-function getAttempt(sportId, participantId, phase, attemptIndex) {
-  return db.attempts.find((attempt) =>
-    attempt.sportId === sportId &&
-    attempt.participantId === participantId &&
-    attempt.phase === phase &&
-    attempt.attemptIndex === attemptIndex
-  );
-}
-
-function upsertAttempt({ sportId, participantId, phase, attemptIndex, status, value }) {
-  let attempt = getAttempt(sportId, participantId, phase, attemptIndex);
-  if (!attempt) {
-    attempt = { id: id("attempt"), dayId: state.selectedDayId, sportId, participantId, phase, attemptIndex, status: "value", value: "" };
-    db.attempts.push(attempt);
-  }
-  if (status !== undefined) {
-    attempt.status = status;
-    if (status !== "value") attempt.value = "";
-  }
-  if (value !== undefined) attempt.value = value;
-  saveDb();
-}
-
-function getTeamResult(teamId) {
-  return db.results.find((result) => result.targetType === "team" && result.targetId === teamId);
-}
-
-function upsertTeamResult(teamId, patch) {
-  const team = db.relayTeams.find((item) => item.id === teamId);
-  let result = getTeamResult(teamId);
-  if (!result) {
-    result = {
-      id: id("result"),
-      dayId: team.dayId,
-      sportId: team.sportId,
-      phase: "relay",
-      targetType: "team",
-      targetId: teamId,
-      status: "value",
-      value: ""
-    };
-    db.results.push(result);
-  }
-  Object.assign(result, patch);
-  if (result.status !== "value") result.value = "";
-  saveDb();
-}
-
-function getFinalResult(sportId, participantId) {
-  return db.results.find((result) =>
-    result.sportId === sportId &&
-    result.phase === "final" &&
-    result.targetType === "participant" &&
-    result.targetId === participantId
-  );
-}
-
-function upsertFinalResult(sportId, participantId, patch) {
-  let result = getFinalResult(sportId, participantId);
-  if (!result) {
-    result = {
-      id: id("result"),
-      dayId: state.selectedDayId,
-      sportId,
-      phase: "final",
-      targetType: "participant",
-      targetId: participantId,
-      status: "value",
-      value: ""
-    };
-    db.results.push(result);
-  }
-  Object.assign(result, patch);
-  if (result.status !== "value") result.value = "";
-  saveDb();
-}
-
-function bestParticipantResult(sport, participant, phase) {
-  const attempts = db.attempts.filter((attempt) =>
-    attempt.sportId === sport.id &&
-    attempt.participantId === participant.id &&
-    attempt.phase === phase
-  );
-  const numeric = attempts
-    .filter((attempt) => attempt.status === "value" && attempt.value !== "")
-    .map((attempt) => Number(attempt.value))
-    .filter((value) => Number.isFinite(value));
-  const invalid = attempts.find((attempt) => attempt.status === "retired" || attempt.status === "disqualified");
-  if (numeric.length) {
-    const best = sport.name === "Velocita" ? Math.min(...numeric) : Math.max(...numeric);
-    return { value: best, status: "value" };
-  }
-  if (invalid) return { value: null, status: invalid.status };
-  return { value: null, status: "missing" };
-}
-
 function getSpeedFinalists(sport, yearId, sex) {
   return getSpeedQualifiedCandidates(sport, yearId, sex).slice(0, sport.finalists);
 }
@@ -1606,51 +1479,6 @@ function persistRanking(sport, yearId, sex, rows, phase = null) {
     updatedAt: new Date().toISOString()
   });
   saveDb();
-}
-
-function addDefaultSports(dayId, selectedSports) {
-  selectedSports.forEach((sportName) => {
-    db.sports.push({
-      id: id("sport"),
-      dayId,
-      name: normalizeSportName(sportName),
-      attempts: normalizeSportName(sportName) === "Staffetta" ? 1 : 3,
-      finalists: 6
-    });
-  });
-}
-
-function createSport(dayId, sportName) {
-  db.sports.push({
-    id: id("sport"),
-    dayId,
-    name: sportName,
-    attempts: sportName === "Staffetta" ? 1 : 3,
-    finalists: 6
-  });
-}
-
-function deleteSport(sportId) {
-  const participantIds = db.participants.filter((participant) => participant.sportId === sportId).map((participant) => participant.id);
-  db.sports = db.sports.filter((sport) => sport.id !== sportId);
-  db.participants = db.participants.filter((participant) => participant.sportId !== sportId);
-  db.attempts = db.attempts.filter((attempt) => attempt.sportId !== sportId);
-  db.results = db.results.filter((result) => result.sportId !== sportId && !participantIds.includes(result.targetId));
-  db.relayTeams = db.relayTeams.filter((team) => team.sportId !== sportId);
-  db.rankings = db.rankings.filter((ranking) => ranking.sportId !== sportId);
-}
-
-function cleanupDay(dayId) {
-  const sportIds = db.sports.filter((sport) => sport.dayId === dayId).map((sport) => sport.id);
-  db.sportsDays = db.sportsDays.filter((day) => day.id !== dayId);
-  db.sports = db.sports.filter((sport) => sport.dayId !== dayId);
-  db.years = db.years.filter((year) => year.dayId !== dayId);
-  db.sections = db.sections.filter((section) => section.dayId !== dayId);
-  db.participants = db.participants.filter((participant) => participant.dayId !== dayId);
-  db.relayTeams = db.relayTeams.filter((team) => team.dayId !== dayId);
-  db.attempts = db.attempts.filter((attempt) => !sportIds.includes(attempt.sportId));
-  db.results = db.results.filter((result) => !sportIds.includes(result.sportId));
-  db.rankings = db.rankings.filter((ranking) => ranking.dayId !== dayId);
 }
 
 function serializeForm(form) {
