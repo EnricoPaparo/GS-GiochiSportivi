@@ -1,5 +1,5 @@
 import { restoreSession, setSession } from "./auth/authService.js";
-import { listenFirebaseAuth, mapFirebaseUserToSession } from "./auth/firebaseAuthService.js";
+import { listenFirebaseAuth, logoutFirebaseUser, mapFirebaseUserToSession } from "./auth/firebaseAuthService.js";
 import { getFirebaseUserProfile } from "./auth/firebaseUserService.js";
 import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
@@ -17,12 +17,11 @@ function render() {
   renderUi(app);
 }
 
-restoreSession();
-listenFirebaseAuth(async (firebaseUser) => {
-  if (!firebaseUser) return;
-
+async function activateFirebaseSession(firebaseUser) {
   const profile = await getFirebaseUserProfile(firebaseUser.uid);
-  if (!profile) {
+
+  if (!profile?.role) {
+    await logoutFirebaseUser();
     setSession(null);
     state.view = "auth";
     render();
@@ -40,6 +39,20 @@ listenFirebaseAuth(async (firebaseUser) => {
   }
 
   render();
+}
+
+restoreSession();
+listenFirebaseAuth(async (firebaseUser) => {
+  if (!firebaseUser) {
+    if (state.user?.provider === "firebase") {
+      setSession(null);
+      state.view = "auth";
+      render();
+    }
+    return;
+  }
+
+  await activateFirebaseSession(firebaseUser);
 });
 bindEventHandlers(app, render);
 render();
