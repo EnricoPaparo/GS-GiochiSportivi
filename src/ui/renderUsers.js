@@ -21,9 +21,13 @@ export function renderUsersSection() {
         <button class="btn" type="button" data-action="backup-firestore">Backup su Firestore</button>
         <button class="btn secondary" type="button" data-action="restore-firestore">Ripristina da Firestore</button>
       </div>
-      <div class="inline">
+      <div class="inline" style="margin-bottom: 12px;">
         <button class="btn secondary" type="button" data-action="push-sports-days-firestore">Invia giornate a Firestore</button>
         <button class="btn secondary" type="button" data-action="pull-sports-days-firestore">Carica giornate da Firestore</button>
+      </div>
+      <div class="inline">
+        <button class="btn secondary" type="button" data-action="push-sports-firestore">Invia sport a Firestore</button>
+        <button class="btn secondary" type="button" data-action="pull-sports-firestore">Carica sport da Firestore</button>
       </div>
     </section>
 
