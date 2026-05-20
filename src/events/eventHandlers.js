@@ -8,6 +8,7 @@ import { canAdmin, canEditResults, isGuest, isLockedUser } from "../auth/permiss
 import { cleanupDay, getDay, getSections, getYears } from "../domain/days.js";
 import { addDefaultSports, createSport, deleteSport, getSport, normalizeSportName } from "../domain/sports.js";
 import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/results.js";
+import { loginWithEmailPassword, mapFirebaseUserToSession } from "../auth/firebaseAuthService.js";
 export function bindEventHandlers(app, render) {
 function saveDb() {
   persistDb(db);
@@ -27,12 +28,33 @@ function serializeForm(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
-app.addEventListener("submit", (event) => {
+app.addEventListener("submit", async (event) => {
   const form = event.target.closest("form");
   if (!form) return;
   event.preventDefault();
   const action = form.dataset.action;
   const data = serializeForm(form);
+
+if (action === "firebase-login") {
+  try {
+    const firebaseUser = await loginWithEmailPassword(data.email, data.password);
+
+    setSession({
+      ...mapFirebaseUserToSession(firebaseUser),
+      provider: "firebase",
+      role: ROLES.TEACHER
+    });
+
+    state.view = "dashboard";
+    toast("Accesso Firebase effettuato.");
+    render();
+  } catch (error) {
+    console.error(error);
+    toast("Login Firebase non riuscito.");
+  }
+
+  return;
+}
 
   if (action === "login") {
     const user = db.users.find((item) => item.username === data.username && item.password === data.password);
