@@ -9,6 +9,7 @@ import { cleanupDay, getDay, getSections, getYears } from "../domain/days.js";
 import { addDefaultSports, createSport, deleteSport, getSport, normalizeSportName } from "../domain/sports.js";
 import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/results.js";
 import { loginWithEmailPassword, mapFirebaseUserToSession } from "../auth/firebaseAuthService.js";
+import { getFirebaseUserProfile } from "../auth/firebaseUserService.js";
 export function bindEventHandlers(app, render) {
 function saveDb() {
   persistDb(db);
@@ -37,16 +38,28 @@ app.addEventListener("submit", async (event) => {
 
 if (action === "firebase-login") {
   try {
-    const firebaseUser = await loginWithEmailPassword(data.email, data.password);
+    const firebaseUser = await loginWithEmailPassword(
+      data.email,
+      data.password
+    );
+
+    const profile = await getFirebaseUserProfile(firebaseUser.uid);
+
+    if (!profile) {
+      toast("Profilo Firestore non trovato.");
+      return;
+    }
 
     setSession({
       ...mapFirebaseUserToSession(firebaseUser),
       provider: "firebase",
-      role: ROLES.TEACHER
+      role: profile.role
     });
 
     state.view = "dashboard";
+
     toast("Accesso Firebase effettuato.");
+
     render();
   } catch (error) {
     console.error(error);
