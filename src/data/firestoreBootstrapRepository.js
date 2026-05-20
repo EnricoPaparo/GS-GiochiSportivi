@@ -1,4 +1,3 @@
-import { saveDb as persistDb } from "./repository.js";
 import { emptyDb } from "./schema.js";
 import { migrateDb } from "./migrations.js";
 import { loadRemoteDb } from "./firestoreRepository.js";
@@ -19,7 +18,6 @@ function replaceRuntimeDb(nextDb) {
   });
 
   Object.assign(db, migrateDb(nextDb));
-  persistDb(db);
 }
 
 function hasCollectionData(collections) {
@@ -70,17 +68,16 @@ export async function bootstrapFirestoreFirstDb() {
     ]);
 
     if (!remoteDb && !hasCollectionData(remoteCollections)) {
-      return { source: "localStorage", loaded: false };
+      replaceRuntimeDb(emptyDb());
+      return { source: "firestoreEmpty", loaded: false };
     }
 
     const nextDb = {
       ...emptyDb(),
-      ...db,
       ...(remoteDb || {}),
       ...remoteCollections,
       meta: {
         ...emptyDb().meta,
-        ...db.meta,
         ...(remoteDb?.meta || {}),
         firestoreFirst: true,
         hydratedAt: new Date().toISOString()
@@ -94,7 +91,8 @@ export async function bootstrapFirestoreFirstDb() {
       loaded: true
     };
   } catch (error) {
-    console.warn("Firestore-first bootstrap non riuscito, uso localStorage.", error);
-    return { source: "localStorageFallback", loaded: false, error };
+    console.error("Firestore bootstrap non riuscito.", error);
+    replaceRuntimeDb(emptyDb());
+    return { source: "firestoreError", loaded: false, error };
   }
 }
