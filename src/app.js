@@ -5,6 +5,7 @@ import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { getDay } from "./domain/days.js";
 import { displaySportName } from "./domain/sports.js";
+import { state } from "./state.js";
 
 // Temporary compatibility bridge for render modules split from the legacy app.js.
 // TODO: remove after importing these dependencies directly in renderSport.js.
@@ -23,6 +24,7 @@ listenFirebaseAuth(async (firebaseUser) => {
   const profile = await getFirebaseUserProfile(firebaseUser.uid);
   if (!profile) {
     setSession(null);
+    state.view = "auth";
     render();
     return;
   }
@@ -32,6 +34,11 @@ listenFirebaseAuth(async (firebaseUser) => {
     provider: "firebase",
     role: profile.role
   });
+
+  if (state.view === "auth") {
+    state.view = "dashboard";
+  }
+
   render();
 });
 bindEventHandlers(app, render);
