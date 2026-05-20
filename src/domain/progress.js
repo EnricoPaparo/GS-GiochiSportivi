@@ -8,7 +8,7 @@ import { getEffectiveSpeedFinalists } from "./rankings.js";
 
 export function isAttemptComplete(attempt) {
   if (!attempt) return false;
-  if (attempt.status === "retired" || attempt.status === "disqualified") return true;
+  if (attempt.status === "null" || attempt.status === "retired" || attempt.status === "disqualified") return true;
   return attempt.status === "value" && attempt.value !== "";
 }
 

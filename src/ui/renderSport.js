@@ -7,7 +7,16 @@ import { getDay, getSection, getSections, getYears } from "../domain/days.js";
 import { displaySportName, getSport } from "../domain/sports.js";
 import { ensureValidFilter, getParticipantsForContext, orderParticipants, orderRelayTeams } from "../domain/participants.js";
 import { getAttempt, getFinalResult, getTeamResult } from "../domain/results.js";
-import { computeRanking, getEffectiveSpeedFinalists, persistRanking } from "../domain/rankings.js";
+import { computeRanking, getEffectiveSpeedFinalists } from "../domain/rankings.js";
+
+const STANDARD_RESULT_STATES = RESULT_STATES.filter((stateItem) => stateItem.value !== "null");
+
+function resultStatesForAttempt(sport) {
+  return sport.name === "Vortex" || sport.name === "Salto in lungo"
+    ? RESULT_STATES
+    : STANDARD_RESULT_STATES;
+}
+
 export function renderSport() {
   const day = getDay(state.selectedDayId);
   const sport = getSport(state.selectedSportId);
@@ -136,7 +145,7 @@ function renderAttemptCell(sport, participantId, phase, attemptIndex) {
     <td>
       <div class="attempt-cell">
         <select data-action="update-attempt-status" data-sport-id="${sport.id}" data-participant-id="${participantId}" data-phase="${phase}" data-attempt-index="${attemptIndex}">
-          ${RESULT_STATES.map((item) => `<option value="${item.value}" ${item.value === status ? "selected" : ""}>${item.label}</option>`).join("")}
+          ${resultStatesForAttempt(sport).map((item) => `<option value="${item.value}" ${item.value === status ? "selected" : ""}>${item.label}</option>`).join("")}
         </select>
         <input type="number" step="0.01" value="${escapeHtml(attempt?.value ?? "")}" ${status === "value" ? "" : "disabled"} data-action="update-attempt-value" data-sport-id="${sport.id}" data-participant-id="${participantId}" data-phase="${phase}" data-attempt-index="${attemptIndex}">
       </div>
@@ -258,7 +267,7 @@ function renderTeamRow(team, pool) {
       <td>
         <div class="attempt-cell">
           <select data-action="update-team-status" data-team-id="${team.id}">
-            ${RESULT_STATES.map((item) => `<option value="${item.value}" ${item.value === status ? "selected" : ""}>${item.label}</option>`).join("")}
+            ${STANDARD_RESULT_STATES.map((item) => `<option value="${item.value}" ${item.value === status ? "selected" : ""}>${item.label}</option>`).join("")}
           </select>
           <input type="number" step="0.01" placeholder="Tempo" value="${escapeHtml(result?.value ?? "")}" ${status === "value" ? "" : "disabled"} data-action="update-team-value" data-team-id="${team.id}">
         </div>
@@ -358,7 +367,7 @@ function renderSpeedFinals(sport) {
                   <td>
                     <div class="attempt-cell">
                       <select data-action="update-final-status" data-sport-id="${sport.id}" data-participant-id="${item.participant.id}">
-                        ${RESULT_STATES.map((stateItem) => `<option value="${stateItem.value}" ${stateItem.value === status ? "selected" : ""}>${stateItem.label}</option>`).join("")}
+                        ${STANDARD_RESULT_STATES.map((stateItem) => `<option value="${stateItem.value}" ${stateItem.value === status ? "selected" : ""}>${stateItem.label}</option>`).join("")}
                       </select>
                       <input type="number" step="0.01" value="${escapeHtml(result?.value ?? "")}" ${status === "value" ? "" : "disabled"} data-action="update-final-value" data-sport-id="${sport.id}" data-participant-id="${item.participant.id}">
                     </div>
@@ -379,7 +388,6 @@ function renderRankings(sport) {
   ensureValidFilter(years, false);
   const rankingPhase = sport.name === "Velocita" ? state.speedPhase : null;
   const rows = computeRanking(sport, state.filters.yearId, state.filters.sex, rankingPhase);
-  persistRanking(sport, state.filters.yearId, state.filters.sex, rows, rankingPhase);
   return `
     ${renderContextSelectors(false)}
     <div class="table-wrap">

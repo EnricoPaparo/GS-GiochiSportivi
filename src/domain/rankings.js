@@ -1,17 +1,12 @@
 import { SEXES } from "../constants.js";
-import { saveDb as persistDb } from "../data/repository.js";
 import { db, state } from "../state.js";
 import { formatMeasure, normalizePositiveInteger } from "../utils/numbers.js";
 import { naturalCompare } from "../utils/sorting.js";
-import { id } from "../utils/ids.js";
 import { getSection, getSections, getYears } from "./days.js";
 import { bestParticipantResult, getFinalResult, getTeamResult } from "./results.js";
 
-function saveDb() {
-  return persistDb(db);
-}
-
 export function statusLabel(status) {
+  if (status === "null") return "Nullo";
   if (status === "retired") return "Ritirato";
   if (status === "disqualified") return "Squalificato";
   return "Valido";
@@ -201,25 +196,4 @@ export function getRankingRowSectionId(row, sport) {
     return db.relayTeams.find((team) => team.id === row.id)?.sectionId || "";
   }
   return db.participants.find((participant) => participant.id === row.id)?.sectionId || "";
-}
-
-export function persistRanking(sport, yearId, sex, rows, phase = null) {
-  db.rankings = db.rankings.filter((ranking) => !(
-    ranking.dayId === state.selectedDayId &&
-    ranking.sportId === sport.id &&
-    ranking.yearId === yearId &&
-    ranking.sex === sex &&
-    (ranking.phase || null) === phase
-  ));
-  db.rankings.push({
-    id: id("ranking"),
-    dayId: state.selectedDayId,
-    sportId: sport.id,
-    phase,
-    yearId,
-    sex,
-    rows,
-    updatedAt: new Date().toISOString()
-  });
-  return saveDb();
 }

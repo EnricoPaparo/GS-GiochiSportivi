@@ -13,6 +13,7 @@ export const SEXES = [
 
 export const RESULT_STATES = [
   { value: "value", label: "Valore" },
+  { value: "null", label: "Nullo" },
   { value: "retired", label: "Ritirato" },
   { value: "disqualified", label: "Squalificato" }
 ];

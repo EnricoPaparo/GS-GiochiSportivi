@@ -93,7 +93,8 @@ export function bestParticipantResult(sport, participant, phase) {
     .filter((attempt) => attempt.status === "value" && attempt.value !== "")
     .map((attempt) => Number(attempt.value))
     .filter(Number.isFinite);
-  const invalid = attempts.find((attempt) => attempt.status === "retired" || attempt.status === "disqualified");
+  const invalid = attempts.find((attempt) => attempt.status === "retired" || attempt.status === "disqualified") ||
+    attempts.find((attempt) => attempt.status === "null");
   if (values.length) {
     const value = sport.name === "Velocita" ? Math.min(...values) : Math.max(...values);
     return { value, status: "value" };
