@@ -3,6 +3,7 @@ import { listenFirebaseAuth, logoutFirebaseUser, mapFirebaseUserToSession } from
 import { getFirebaseUserProfile } from "./auth/firebaseUserService.js";
 import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
+import { bindFirestoreBackupHandlers } from "./events/firestoreBackupHandlers.js";
 import { getDay } from "./domain/days.js";
 import { displaySportName } from "./domain/sports.js";
 import { state } from "./state.js";
@@ -54,5 +55,8 @@ listenFirebaseAuth(async (firebaseUser) => {
 
   await activateFirebaseSession(firebaseUser);
 });
+
 bindEventHandlers(app, render);
+bindFirestoreBackupHandlers(app, render);
+
 render();
