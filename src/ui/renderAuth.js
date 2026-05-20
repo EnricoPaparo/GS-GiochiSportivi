@@ -10,9 +10,27 @@ export function renderAuth() {
         </div>
       </section>
       <section class="auth-forms">
+        <form class="panel" data-action="firebase-login">
+          <div class="section-head">
+            <h2>Login docenti/admin</h2>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="firebase-email">Email</label>
+              <input id="firebase-email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="firebase-password">Password</label>
+              <input id="firebase-password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+          </div>
+          <div class="inline" style="margin-top: 14px;">
+            <button class="btn" type="submit">Accedi con Firebase</button>
+          </div>
+        </form>
         <form class="panel" data-action="login">
           <div class="section-head">
-            <h2>Login</h2>
+            <h2>Login locale temporaneo</h2>
           </div>
           <div class="form-grid">
             <div class="field">
@@ -25,7 +43,7 @@ export function renderAuth() {
             </div>
           </div>
           <div class="inline" style="margin-top: 14px;">
-            <button class="btn" type="submit">Accedi</button>
+            <button class="btn secondary" type="submit">Accedi locale</button>
           </div>
         </form>
       </section>
