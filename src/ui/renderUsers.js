@@ -33,9 +33,17 @@ export function renderUsersSection() {
         <button class="btn secondary" type="button" data-action="push-years-firestore">Invia anni a Firestore</button>
         <button class="btn secondary" type="button" data-action="pull-years-firestore">Carica anni da Firestore</button>
       </div>
-      <div class="inline">
+      <div class="inline" style="margin-bottom: 12px;">
         <button class="btn secondary" type="button" data-action="push-sections-firestore">Invia sezioni a Firestore</button>
         <button class="btn secondary" type="button" data-action="pull-sections-firestore">Carica sezioni da Firestore</button>
+      </div>
+      <div class="inline" style="margin-bottom: 12px;">
+        <button class="btn secondary" type="button" data-action="push-participants-firestore">Invia partecipanti a Firestore</button>
+        <button class="btn secondary" type="button" data-action="pull-participants-firestore">Carica partecipanti da Firestore</button>
+      </div>
+      <div class="inline">
+        <button class="btn secondary" type="button" data-action="push-relay-teams-firestore">Invia squadre a Firestore</button>
+        <button class="btn secondary" type="button" data-action="pull-relay-teams-firestore">Carica squadre da Firestore</button>
       </div>
     </section>
 
