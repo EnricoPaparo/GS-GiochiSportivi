@@ -23,13 +23,27 @@ export function getDaySportWidgets(sports) {
   });
 }
 
+function getDefaultAttempts(sportName) {
+  const normalizedName = normalizeSportName(sportName);
+
+  if (normalizedName === "Velocita" || normalizedName === "Staffetta") {
+    return 1;
+  }
+
+  if (normalizedName === "Salto in lungo" || normalizedName === "Vortex") {
+    return 2;
+  }
+
+  return 3;
+}
+
 export function addDefaultSports(dayId, selectedSports) {
   selectedSports.forEach((sportName) => {
     db.sports.push({
       id: id("sport"),
       dayId,
       name: normalizeSportName(sportName),
-      attempts: normalizeSportName(sportName) === "Staffetta" ? 1 : 3,
+      attempts: getDefaultAttempts(sportName),
       finalists: 6
     });
   });
@@ -40,7 +54,7 @@ export function createSport(dayId, sportName) {
     id: id("sport"),
     dayId,
     name: sportName,
-    attempts: sportName === "Staffetta" ? 1 : 3,
+    attempts: getDefaultAttempts(sportName),
     finalists: 6
   });
 }
