@@ -8,7 +8,6 @@ import { canAdmin, canEditResults, isGuest, isLockedUser } from "../auth/permiss
 import { cleanupDay, getDay, getSections, getYears } from "../domain/days.js";
 import { addDefaultSports, createSport, deleteSport, getSport, normalizeSportName } from "../domain/sports.js";
 import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/results.js";
-import { loginWithEmailPassword, mapFirebaseUserToSession } from "../auth/firebaseAuthService.js";
 import { getFirebaseUserProfile } from "../auth/firebaseUserService.js";
 import { loginWithEmailPassword, mapFirebaseUserToSession, logoutFirebaseUser } from "../auth/firebaseAuthService.js";
 export function bindEventHandlers(app, render) {
