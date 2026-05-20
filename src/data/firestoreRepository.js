@@ -16,9 +16,16 @@ function appDbRef() {
   return doc(firestoreDb, APP_DB_COLLECTION, APP_DB_DOCUMENT);
 }
 
+function sanitizeAppDb(db) {
+  return {
+    ...db,
+    users: []
+  };
+}
+
 export async function saveRemoteDb(db, user = null) {
   await setDoc(appDbRef(), {
-    db,
+    db: sanitizeAppDb(db),
     updatedAt: serverTimestamp(),
     updatedBy: user
       ? {

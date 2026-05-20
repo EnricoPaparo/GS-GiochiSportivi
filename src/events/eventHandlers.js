@@ -1,10 +1,9 @@
 import { ROLES } from "../constants.js";
 import { id } from "../utils/ids.js";
-import { normalizePositiveInteger } from "../utils/numbers.js";
 import { saveDb as persistDb } from "../data/repository.js";
 import { db, state } from "../state.js";
-import { setSession, updateSession } from "../auth/authService.js";
-import { canAdmin, canEditResults, isGuest, isLockedUser } from "../auth/permissions.js";
+import { setSession } from "../auth/authService.js";
+import { canAdmin, canEditResults, isGuest } from "../auth/permissions.js";
 import { cleanupDay, getDay, getSections, getYears } from "../domain/days.js";
 import { addDefaultSports, createSport, deleteSport, getSport, normalizeSportName } from "../domain/sports.js";
 import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/results.js";
@@ -74,31 +73,6 @@ if (action === "firebase-login") {
 
   return;
 }
-
-  if (action === "login") {
-    const user = db.users.find((item) => item.username === data.username && item.password === data.password);
-    if (!user) return toast("Credenziali non valide.");
-    setSession(user);
-    state.view = "dashboard";
-    render();
-  }
-
-  if (action === "register" && canAdmin()) {
-    if (db.users.some((user) => user.username === data.username)) return toast("Username già esistente.");
-    db.users.push({
-      id: id("user"),
-      firstName: data.firstName.trim(),
-      lastName: data.lastName.trim(),
-      username: data.username.trim(),
-      password: data.password,
-      role: data.role,
-      createdAt: new Date().toISOString()
-    });
-    await saveDb();
-    toast("Utente creato.");
-    form.reset();
-    render();
-  }
 
   if (action === "create-day" && canAdmin()) {
     const maxScoreValue = String(data.maxSectionScore || "").trim();
@@ -390,15 +364,6 @@ if (action === "logout") {
     render();
   }
 
-  if (action === "delete-user" && canAdmin()) {
-    const userId = target.dataset.userId;
-    if (isLockedUser(userId)) return toast("Questo utente non puo essere modificato o eliminato.");
-    if (userId === state.user.id) return toast("Non puoi eliminare l'utente attualmente in uso.");
-    if (!confirm("Eliminare questo utente?")) return;
-    db.users = db.users.filter((user) => user.id !== userId);
-    await saveDb();
-    render();
-  }
 });
 
 app.addEventListener("change", async (event) => {
@@ -497,9 +462,6 @@ app.addEventListener("change", async (event) => {
     render();
   }
 
-  if (action === "update-user" && canAdmin()) {
-    await updateUserField(target);
-  }
 });
 
 app.addEventListener("input", async (event) => {
@@ -584,36 +546,6 @@ app.addEventListener("input", async (event) => {
     }
   }
 });
-
-async function updateUserField(target) {
-  const user = db.users.find((item) => item.id === target.dataset.userId);
-  if (!user) return;
-  if (isLockedUser(user)) {
-    target.value = user[target.dataset.field];
-    return toast("Questo utente non puo essere modificato o eliminato.");
-  }
-  const field = target.dataset.field;
-  const next = target.value.trim();
-  if (!next) {
-    target.value = user[field];
-    return toast("Il campo non può essere vuoto.");
-  }
-  if (field === "role" && user.id === state.user.id) {
-    target.value = user.role;
-    return toast("Non puoi cambiare il ruolo dell'utente attualmente in uso.");
-  }
-  if (field === "username" && db.users.some((item) => item.id !== user.id && item.username.toLowerCase() === next.toLowerCase())) {
-    target.value = user.username;
-    return toast("Username già esistente.");
-  }
-  user[field] = next;
-  if (user.id === state.user.id && field === "username") {
-    updateSession({ username: next });
-  }
-  await saveDb();
-  toast("Utente aggiornato.");
-  render();
-}
 
 function resetFilters() {
   state.filters = { yearId: "", sectionId: "", sex: "M" };

@@ -1,6 +1,6 @@
 import { ROLES } from "../constants.js";
 import { clearSession, getSession, saveSession } from "../data/repository.js";
-import { db, state } from "../state.js";
+import { state } from "../state.js";
 
 export function setSession(user) {
   state.user = user
@@ -25,21 +25,5 @@ export function restoreSession() {
   if (session.role === ROLES.GUEST) {
     state.user = session;
     state.view = "dashboard";
-    return;
   }
-
-  // Local users created inside the app.
-  if (session.provider !== "firebase" && db.users.some((user) => user.id === session.id)) {
-    state.user = session;
-    state.view = "dashboard";
-    return;
-  }
-
-  // Firebase users will be restored later by Firebase Auth listener.
-}
-
-export function updateSession(patch) {
-  if (!state.user) return;
-  state.user = { ...state.user, ...patch };
-  saveSession(state.user);
 }

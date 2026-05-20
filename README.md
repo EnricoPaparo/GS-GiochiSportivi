@@ -6,17 +6,11 @@ Web application statica per gestire giornate sportive scolastiche con ruoli, par
 
 Apri `index.html` nel browser, oppure servi la cartella con un qualsiasi server statico.
 
-Credenziali iniziali:
-
-- Username: `administrator`
-- Password: `administrator`
-- Ruolo: `Administrator`
-
-I dati vengono salvati nel `localStorage` del browser nella chiave `giornateSportive.db.v1`.
+L'app usa Firebase Auth per l'accesso di amministratori e docenti, mentre gli spettatori possono entrare senza autenticazione. I dati applicativi sono salvati in Firestore nello snapshot `appData/main`; `localStorage` resta usato solo per la sessione di login del browser.
 
 ## Funzionalita principali
 
-- Login, accesso spettatore e sezione `Utenze` per creare, modificare ed eliminare utenti.
+- Login Firebase, accesso spettatore e strumenti cloud per amministratori.
 - Ruoli `Administrator`, `Docente` e `Spettatore/Ospite`.
 - Creazione, modifica ed eliminazione delle giornate sportive per amministratori.
 - Configurazione di sport, prove, finalisti della velocita, anni e sezioni.
@@ -24,3 +18,9 @@ I dati vengono salvati nel `localStorage` del browser nella chiave `giornateSpor
 - Inserimento risultati inline per Vortex, Salto in lungo, Staffetta e Velocita.
 - Qualifiche e finali separate per la Velocita.
 - Classifiche automatiche con sezioni accorpate per anno e sesso.
+
+## Persistenza
+
+- Firestore e l'unica source of truth dei dati sportivi condivisi tra dispositivi.
+- Gli utenti non vengono salvati nello snapshot applicativo: credenziali e profili vivono in Firebase Auth e nella collection Firestore dedicata ai profili.
+- Lo snapshot `appData/main` mantiene `users` vuoto per compatibilita di schema e per evitare dati legacy o password locali.

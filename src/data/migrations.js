@@ -1,5 +1,5 @@
 import { normalizePositiveInteger } from "../utils/numbers.js";
-import { emptyDb, LOCKED_ADMIN_ID, LOCKED_ADMIN_USER } from "./schema.js";
+import { emptyDb } from "./schema.js";
 
 function normalizeSportNameForMigration(name) {
   return name === "VelocitÃ " ? "Velocita" : name;
@@ -24,24 +24,6 @@ export function migrateDb(source) {
     merged.rankings = [];
   }
   merged.meta.participantsScopedBySport = true;
-  ensureLockedAdminUser(merged);
+  merged.users = [];
   return merged;
-}
-
-export function ensureLockedAdminUser(targetDb) {
-  let locked = targetDb.users.find((user) => user.id === LOCKED_ADMIN_ID) ||
-    targetDb.users.find((user) => user.username?.toLowerCase() === LOCKED_ADMIN_USER.username);
-
-  if (!locked) {
-    locked = { ...LOCKED_ADMIN_USER, createdAt: new Date().toISOString() };
-    targetDb.users.unshift(locked);
-  } else {
-    Object.assign(locked, LOCKED_ADMIN_USER, { createdAt: locked.createdAt || new Date().toISOString() });
-  }
-
-  targetDb.users.forEach((user) => {
-    if (user !== locked && user.username?.toLowerCase() === LOCKED_ADMIN_USER.username) {
-      user.username = `${user.username}_${user.id.slice(-4)}`;
-    }
-  });
 }
