@@ -25,9 +25,17 @@ export function renderUsersSection() {
         <button class="btn secondary" type="button" data-action="push-sports-days-firestore">Invia giornate a Firestore</button>
         <button class="btn secondary" type="button" data-action="pull-sports-days-firestore">Carica giornate da Firestore</button>
       </div>
-      <div class="inline">
+      <div class="inline" style="margin-bottom: 12px;">
         <button class="btn secondary" type="button" data-action="push-sports-firestore">Invia sport a Firestore</button>
         <button class="btn secondary" type="button" data-action="pull-sports-firestore">Carica sport da Firestore</button>
+      </div>
+      <div class="inline" style="margin-bottom: 12px;">
+        <button class="btn secondary" type="button" data-action="push-years-firestore">Invia anni a Firestore</button>
+        <button class="btn secondary" type="button" data-action="pull-years-firestore">Carica anni da Firestore</button>
+      </div>
+      <div class="inline">
+        <button class="btn secondary" type="button" data-action="push-sections-firestore">Invia sezioni a Firestore</button>
+        <button class="btn secondary" type="button" data-action="pull-sections-firestore">Carica sezioni da Firestore</button>
       </div>
     </section>
 
