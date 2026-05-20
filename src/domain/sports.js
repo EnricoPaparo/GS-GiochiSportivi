@@ -2,11 +2,11 @@ import { id } from "../utils/ids.js";
 import { db } from "../state.js";
 
 export function normalizeSportName(name) {
-  return name === "VelocitÃ " ? "Velocita" : name;
+  return name === "Velocità" ? "Velocita" : name;
 }
 
 export function displaySportName(name) {
-  return name === "Velocita" ? "VelocitÃ " : name;
+  return name === "Velocita" ? "Velocità" : name;
 }
 
 export function getSport(sportId) {
