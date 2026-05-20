@@ -10,6 +10,7 @@ import { addDefaultSports, createSport, deleteSport, getSport, normalizeSportNam
 import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/results.js";
 import { loginWithEmailPassword, mapFirebaseUserToSession } from "../auth/firebaseAuthService.js";
 import { getFirebaseUserProfile } from "../auth/firebaseUserService.js";
+import { loginWithEmailPassword, mapFirebaseUserToSession, logoutFirebaseUser } from "../auth/firebaseAuthService.js";
 export function bindEventHandlers(app, render) {
 function saveDb() {
   persistDb(db);
@@ -192,7 +193,7 @@ if (action === "firebase-login") {
   }
 });
 
-app.addEventListener("click", (event) => {
+app.addEventListener("click", async (event) => {
   const target = event.target.closest("[data-action]");
   if (!target) return;
   const { action } = target.dataset;
@@ -203,12 +204,17 @@ app.addEventListener("click", (event) => {
     render();
   }
 
-  if (action === "logout") {
-    state.profileOpen = false;
-    setSession(null);
-    state.view = "auth";
-    render();
+if (action === "logout") {
+  state.profileOpen = false;
+
+  if (state.user?.provider === "firebase") {
+    await logoutFirebaseUser();
   }
+
+  setSession(null);
+  state.view = "auth";
+  render();
+}
 
   if (action === "go-dashboard") {
     state.view = "dashboard";
