@@ -1,19 +1,39 @@
-import {
-  clearSession,
-  getDb,
-  getSession,
-  resetDb,
-  saveDb as saveLocalDb,
-  saveSession
-} from "./localStorageRepository.js";
 import { saveRemoteDb } from "./firestoreRepository.js";
+import { migrateDb } from "./migrations.js";
+import { emptyDb } from "./schema.js";
 
-export { clearSession, getDb, getSession, resetDb, saveSession };
+export function getDb() {
+  return migrateDb(emptyDb());
+}
 
 export function saveDb(db) {
-  saveLocalDb(db);
-
   saveRemoteDb(db).catch((error) => {
-    console.warn("Salvataggio Firestore non riuscito; dati mantenuti nella cache locale.", error);
+    console.error("Firestore save failed.", error);
   });
+}
+
+export function resetDb() {
+  const fresh = getDb();
+  saveDb(fresh);
+  return fresh;
+}
+
+// Session persistence can stay browser-local.
+export function getSession() {
+  try {
+    return JSON.parse(localStorage.getItem("giornateSportive.session.v1"));
+  } catch {
+    return null;
+  }
+}
+
+export function saveSession(session) {
+  localStorage.setItem(
+    "giornateSportive.session.v1",
+    JSON.stringify(session)
+  );
+}
+
+export function clearSession() {
+  localStorage.removeItem("giornateSportive.session.v1");
 }
