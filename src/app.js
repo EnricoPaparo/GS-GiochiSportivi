@@ -5,6 +5,7 @@ import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { bindFirestoreBackupHandlers } from "./events/firestoreBackupHandlers.js";
 import { bindFirestoreSportsDaysSyncHandlers } from "./events/firestoreSportsDaysSyncHandlers.js";
+import { bindFirestoreSportsSyncHandlers } from "./events/firestoreSportsSyncHandlers.js";
 import { getDay } from "./domain/days.js";
 import { displaySportName } from "./domain/sports.js";
 import { state } from "./state.js";
@@ -60,5 +61,6 @@ listenFirebaseAuth(async (firebaseUser) => {
 bindEventHandlers(app, render);
 bindFirestoreBackupHandlers(app, render);
 bindFirestoreSportsDaysSyncHandlers(app, render);
+bindFirestoreSportsSyncHandlers(app, render);
 
 render();
