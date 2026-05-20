@@ -1,4 +1,5 @@
-import { restoreSession } from "./auth/authService.js";
+import { restoreSession, setSession } from "./auth/authService.js";
+import { listenFirebaseAuth, mapFirebaseUserToSession } from "./auth/firebaseAuthService.js";
 import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { getDay } from "./domain/days.js";
@@ -15,5 +16,13 @@ function render() {
 }
 
 restoreSession();
+listenFirebaseAuth((firebaseUser) => {
+  if (!firebaseUser) return;
+  setSession({
+    ...mapFirebaseUserToSession(firebaseUser),
+    provider: "firebase"
+  });
+  render();
+});
 bindEventHandlers(app, render);
 render();
