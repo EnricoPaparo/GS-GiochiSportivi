@@ -17,9 +17,13 @@ export function renderUsersSection() {
       <p class="muted" style="margin-top: 0;">
         I dati live restano su questo dispositivo tramite localStorage. Usa questi comandi per salvare o ripristinare una copia completa su Firestore.
       </p>
-      <div class="inline" style="margin-bottom: 18px;">
+      <div class="inline" style="margin-bottom: 12px;">
         <button class="btn" type="button" data-action="backup-firestore">Backup su Firestore</button>
         <button class="btn secondary" type="button" data-action="restore-firestore">Ripristina da Firestore</button>
+      </div>
+      <div class="inline">
+        <button class="btn secondary" type="button" data-action="push-sports-days-firestore">Invia giornate a Firestore</button>
+        <button class="btn secondary" type="button" data-action="pull-sports-days-firestore">Carica giornate da Firestore</button>
       </div>
     </section>
 
