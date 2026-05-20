@@ -5,6 +5,7 @@ import { formatDate, today } from "../utils/dates.js";
 import { escapeHtml } from "../utils/html.js";
 import { compareSportsDaysByDateDesc } from "../utils/sorting.js";
 import { displaySportName } from "../domain/sports.js";
+import { getDayProgress } from "../domain/progress.js";
 
 export function renderDaysSection() {
   const days = [...db.sportsDays].sort(compareSportsDaysByDateDesc);
@@ -76,6 +77,8 @@ function renderCreateDayForm() {
 
 function renderDayCard(day) {
   const sports = db.sports.filter((sport) => sport.dayId === day.id);
+  const progress = getDayProgress(day.id);
+  const percent = progress.total ? Math.round((progress.completed / progress.total) * 100) : 0;
   return `
     <article class="card">
       <div>
@@ -86,6 +89,15 @@ function renderDayCard(day) {
         <span class="pill">${formatDate(day.date)}</span>
         <span class="pill">${escapeHtml(day.startTime)}-${escapeHtml(day.endTime)}</span>
         <span class="pill">${sports.length} sport</span>
+      </div>
+      <div class="progress-block" aria-label="Avanzamento giornata ${progress.completed} su ${progress.total}">
+        <div class="progress-meta">
+          <span>Completamento</span>
+          <strong>${percent}%</strong>
+        </div>
+        <div class="progress-track">
+          <span class="progress-fill" style="width: ${percent}%"></span>
+        </div>
       </div>
       <div class="card-actions">
         <button class="btn" data-action="open-day" data-day-id="${day.id}">Apri</button>

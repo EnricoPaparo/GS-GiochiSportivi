@@ -8,11 +8,13 @@ import { getDay, getSections, getYears } from "../domain/days.js";
 import { displaySportName, getDaySportWidgets } from "../domain/sports.js";
 import { countParticipants } from "../domain/participants.js";
 import { computeSectionStandings } from "../domain/rankings.js";
-import { getMissingProofRows, getSportProgress } from "../domain/progress.js";
+import { getDayProgress, getMissingProofRows, getSportProgress } from "../domain/progress.js";
 export function renderDay() {
   const day = getDay(state.selectedDayId);
   const sports = db.sports.filter((sport) => sport.dayId === day.id);
   const sportWidgets = getDaySportWidgets(sports);
+  const dayProgress = getDayProgress(day.id);
+  const dayPercent = dayProgress.total ? Math.round((dayProgress.completed / dayProgress.total) * 100) : 0;
   return `
     <section class="panel">
       <div class="section-head">
@@ -24,6 +26,15 @@ export function renderDay() {
             <span class="pill">${escapeHtml(day.startTime)}-${escapeHtml(day.endTime)}</span>
             <span class="pill">${escapeHtml(day.address)}</span>
           </div>
+        </div>
+      </div>
+      <div class="progress-block" aria-label="Avanzamento giornata ${dayProgress.completed} su ${dayProgress.total}">
+        <div class="progress-meta">
+          <span>Completamento giornata</span>
+          <strong>${dayPercent}%</strong>
+        </div>
+        <div class="progress-track">
+          <span class="progress-fill" style="width: ${dayPercent}%"></span>
         </div>
       </div>
     </section>

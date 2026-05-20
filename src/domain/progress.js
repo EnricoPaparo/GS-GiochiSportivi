@@ -2,6 +2,7 @@ import { SEXES } from "../constants.js";
 import { db } from "../state.js";
 import { naturalCompare } from "../utils/sorting.js";
 import { getSections, getYears } from "./days.js";
+import { getDaySportWidgets } from "./sports.js";
 import { getSportParticipants } from "./participants.js";
 import { getAttempt, getFinalResult, getTeamResult } from "./results.js";
 import { getEffectiveSpeedFinalists } from "./rankings.js";
@@ -64,6 +65,15 @@ export function getSportProgress(sport, phase = null) {
     total: participants.length,
     completed: participants.filter((participant) => isParticipantSportComplete(participant, sport, sport.name === "Velocita" ? "qualification" : "standard")).length
   };
+}
+
+export function getDayProgress(dayId) {
+  return getDaySportWidgets(db.sports.filter((sport) => sport.dayId === dayId))
+    .map((widget) => getSportProgress(widget.sport, widget.phase))
+    .reduce((total, progress) => ({
+      completed: total.completed + progress.completed,
+      total: total.total + progress.total
+    }), { completed: 0, total: 0 });
 }
 
 export function getMissingProofRows(dayId, sportWidgets) {
