@@ -25,7 +25,7 @@ function defer(callback) {
 
 function replaceSportsDays(nextDays) {
   db.sportsDays = nextDays;
-  persistDb(db);
+  return persistDb(db);
 }
 
 async function syncDayById(dayId) {
@@ -117,7 +117,7 @@ export function bindFirestoreSportsDaysSyncHandlers(app, render) {
         try {
           target.disabled = true;
           const remoteDays = await loadRemoteSportsDays();
-          replaceSportsDays(remoteDays);
+          await replaceSportsDays(remoteDays);
           state.view = "dashboard";
           state.dashboardSection = "days";
           state.selectedDayId = null;

@@ -11,8 +11,14 @@ import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/re
 import { getFirebaseUserProfile } from "../auth/firebaseUserService.js";
 import { loginWithEmailPassword, mapFirebaseUserToSession, logoutFirebaseUser } from "../auth/firebaseAuthService.js";
 export function bindEventHandlers(app, render) {
-function saveDb() {
-  persistDb(db);
+async function saveDb() {
+  try {
+    return await persistDb(db);
+  } catch (error) {
+    console.error("Firestore save failed.", error);
+    toast("Salvataggio Firestore non riuscito.");
+    throw error;
+  }
 }
 
 function toast(message) {
@@ -88,7 +94,7 @@ if (action === "firebase-login") {
       role: data.role,
       createdAt: new Date().toISOString()
     });
-    saveDb();
+    await saveDb();
     toast("Utente creato.");
     form.reset();
     render();
@@ -113,7 +119,7 @@ if (action === "firebase-login") {
     });
     const selectedSports = new FormData(form).getAll("sports").map(normalizeSportName);
     addDefaultSports(dayId, selectedSports);
-    saveDb();
+    await saveDb();
     state.selectedDayId = dayId;
     state.view = "day";
     render();
@@ -134,7 +140,7 @@ if (action === "firebase-login") {
       address: data.address.trim(),
       maxSectionScore
     });
-    saveDb();
+    await saveDb();
     toast("Giornata aggiornata.");
     render();
   }
@@ -144,7 +150,7 @@ if (action === "firebase-login") {
     if (!label) return;
     if (getYears(form.dataset.dayId).some((year) => year.label.toLowerCase() === label.toLowerCase())) return toast("Anno già presente.");
     db.years.push({ id: id("year"), dayId: form.dataset.dayId, label });
-    saveDb();
+    await saveDb();
     render();
   }
 
@@ -154,7 +160,7 @@ if (action === "firebase-login") {
     if (!label) return;
     if (getSections(year.id).some((section) => section.label.toLowerCase() === label.toLowerCase())) return toast("Sezione già presente in questo anno.");
     db.sections.push({ id: id("section"), dayId: year.dayId, yearId: year.id, label });
-    saveDb();
+    await saveDb();
     render();
   }
 
@@ -170,7 +176,7 @@ if (action === "firebase-login") {
       firstName: data.firstName.trim(),
       lastName: data.lastName.trim()
     });
-    saveDb();
+    await saveDb();
     form.reset();
     render();
   }
@@ -187,7 +193,7 @@ if (action === "firebase-login") {
       name: data.name.trim(),
       participantIds: []
     });
-    saveDb();
+    await saveDb();
     render();
   }
 });
@@ -316,7 +322,7 @@ if (action === "logout") {
   if (action === "delete-day" && canAdmin()) {
     if (!confirm("Eliminare questa giornata sportiva e tutti i dati collegati?")) return;
     cleanupDay(target.dataset.dayId);
-    saveDb();
+    await saveDb();
     state.view = "dashboard";
     render();
   }
@@ -334,7 +340,7 @@ if (action === "logout") {
     db.relayTeams = db.relayTeams.filter((team) => team.yearId !== yearId && !sectionIds.includes(team.sectionId));
     db.attempts = db.attempts.filter((attempt) => !participantIds.includes(attempt.participantId));
     db.results = db.results.filter((result) => !participantIds.includes(result.targetId) && !teamIds.includes(result.targetId));
-    saveDb();
+    await saveDb();
     render();
   }
 
@@ -351,7 +357,7 @@ if (action === "logout") {
     db.relayTeams = db.relayTeams.filter((team) => team.sectionId !== sectionId);
     db.attempts = db.attempts.filter((attempt) => !participantIds.includes(attempt.participantId));
     db.results = db.results.filter((result) => !participantIds.includes(result.targetId) && !teamIds.includes(result.targetId));
-    saveDb();
+    await saveDb();
     render();
   }
 
@@ -366,7 +372,7 @@ if (action === "logout") {
     db.relayTeams.forEach((team) => {
       team.participantIds = team.participantIds.filter((id) => id !== participantId);
     });
-    saveDb();
+    await saveDb();
     render();
   }
 
@@ -378,7 +384,7 @@ if (action === "logout") {
     db.relayTeams = db.relayTeams.filter((team) => team.id !== teamId);
     db.results = db.results.filter((result) => result.targetId !== teamId);
     if (state.modalTeamId === teamId) state.modalTeamId = null;
-    saveDb();
+    await saveDb();
     render();
   }
 
@@ -388,12 +394,12 @@ if (action === "logout") {
     if (userId === state.user.id) return toast("Non puoi eliminare l'utente attualmente in uso.");
     if (!confirm("Eliminare questo utente?")) return;
     db.users = db.users.filter((user) => user.id !== userId);
-    saveDb();
+    await saveDb();
     render();
   }
 });
 
-app.addEventListener("change", (event) => {
+app.addEventListener("change", async (event) => {
   const target = event.target.closest("[data-action]");
   if (!target) return;
   const { action } = target.dataset;
@@ -422,28 +428,46 @@ app.addEventListener("change", (event) => {
     const existing = db.sports.find((sport) => sport.dayId === target.dataset.dayId && sport.name === sportName);
     if (target.checked && !existing) createSport(target.dataset.dayId, sportName);
     if (!target.checked && existing) deleteSport(existing.id);
-    saveDb();
+    await saveDb();
     render();
   }
 
   if (action === "update-attempt-status" && canEditResults()) {
-    upsertAttempt({
-      sportId: target.dataset.sportId,
-      participantId: target.dataset.participantId,
-      phase: target.dataset.phase,
-      attemptIndex: Number(target.dataset.attemptIndex),
-      status: target.value
-    });
+    try {
+      await upsertAttempt({
+        sportId: target.dataset.sportId,
+        participantId: target.dataset.participantId,
+        phase: target.dataset.phase,
+        attemptIndex: Number(target.dataset.attemptIndex),
+        status: target.value
+      });
+    } catch (error) {
+      console.error("Firestore save failed.", error);
+      toast("Salvataggio Firestore non riuscito.");
+      return;
+    }
     render();
   }
 
   if (action === "update-team-status" && canEditResults()) {
-    upsertTeamResult(target.dataset.teamId, { status: target.value });
+    try {
+      await upsertTeamResult(target.dataset.teamId, { status: target.value });
+    } catch (error) {
+      console.error("Firestore save failed.", error);
+      toast("Salvataggio Firestore non riuscito.");
+      return;
+    }
     render();
   }
 
   if (action === "update-final-status" && canEditResults()) {
-    upsertFinalResult(target.dataset.sportId, target.dataset.participantId, { status: target.value });
+    try {
+      await upsertFinalResult(target.dataset.sportId, target.dataset.participantId, { status: target.value });
+    } catch (error) {
+      console.error("Firestore save failed.", error);
+      toast("Salvataggio Firestore non riuscito.");
+      return;
+    }
     render();
   }
 
@@ -467,16 +491,16 @@ app.addEventListener("change", (event) => {
     if (!target.checked) {
       team.participantIds = team.participantIds.filter((id) => id !== target.dataset.participantId);
     }
-    saveDb();
+    await saveDb();
     render();
   }
 
   if (action === "update-user" && canAdmin()) {
-    updateUserField(target);
+    await updateUserField(target);
   }
 });
 
-app.addEventListener("input", (event) => {
+app.addEventListener("input", async (event) => {
   const target = event.target.closest("[data-action]");
   if (!target) return;
   const { action } = target.dataset;
@@ -484,13 +508,13 @@ app.addEventListener("input", (event) => {
   if (action === "update-sport-attempts" && canAdmin()) {
     const sport = getSport(target.dataset.sportId);
     sport.attempts = Math.max(1, Number(target.value || 1));
-    saveDb();
+    await saveDb();
   }
 
   if (action === "update-sport-finalists" && canAdmin()) {
     const sport = getSport(target.dataset.sportId);
     sport.finalists = Math.max(1, Number(target.value || 1));
-    saveDb();
+    await saveDb();
   }
 
   if (action === "update-year" && canAdmin()) {
@@ -498,7 +522,7 @@ app.addEventListener("input", (event) => {
     const next = target.value.trim();
     if (next) {
       year.label = next;
-      saveDb();
+      await saveDb();
     }
   }
 
@@ -508,7 +532,7 @@ app.addEventListener("input", (event) => {
     const duplicate = getSections(section.yearId).some((item) => item.id !== section.id && item.label.toLowerCase() === next.toLowerCase());
     if (next && !duplicate) {
       section.label = next;
-      saveDb();
+      await saveDb();
     }
     if (duplicate) toast("Sezione duplicata nello stesso anno.");
   }
@@ -516,35 +540,50 @@ app.addEventListener("input", (event) => {
   if (action === "update-participant" && canEditResults()) {
     const participant = db.participants.find((item) => item.id === target.dataset.participantId);
     participant[target.dataset.field] = target.value;
-    saveDb();
+    await saveDb();
   }
 
   if (action === "update-attempt-value" && canEditResults()) {
-    upsertAttempt({
-      sportId: target.dataset.sportId,
-      participantId: target.dataset.participantId,
-      phase: target.dataset.phase,
-      attemptIndex: Number(target.dataset.attemptIndex),
-      value: target.value
-    });
+    try {
+      await upsertAttempt({
+        sportId: target.dataset.sportId,
+        participantId: target.dataset.participantId,
+        phase: target.dataset.phase,
+        attemptIndex: Number(target.dataset.attemptIndex),
+        value: target.value
+      });
+    } catch (error) {
+      console.error("Firestore save failed.", error);
+      toast("Salvataggio Firestore non riuscito.");
+    }
   }
 
   if (action === "update-team-name" && canEditResults()) {
     const team = db.relayTeams.find((item) => item.id === target.dataset.teamId);
     team.name = target.value;
-    saveDb();
+    await saveDb();
   }
 
   if (action === "update-team-value" && canEditResults()) {
-    upsertTeamResult(target.dataset.teamId, { value: target.value, status: "value" });
+    try {
+      await upsertTeamResult(target.dataset.teamId, { value: target.value, status: "value" });
+    } catch (error) {
+      console.error("Firestore save failed.", error);
+      toast("Salvataggio Firestore non riuscito.");
+    }
   }
 
   if (action === "update-final-value" && canEditResults()) {
-    upsertFinalResult(target.dataset.sportId, target.dataset.participantId, { value: target.value, status: "value" });
+    try {
+      await upsertFinalResult(target.dataset.sportId, target.dataset.participantId, { value: target.value, status: "value" });
+    } catch (error) {
+      console.error("Firestore save failed.", error);
+      toast("Salvataggio Firestore non riuscito.");
+    }
   }
 });
 
-function updateUserField(target) {
+async function updateUserField(target) {
   const user = db.users.find((item) => item.id === target.dataset.userId);
   if (!user) return;
   if (isLockedUser(user)) {
@@ -569,7 +608,7 @@ function updateUserField(target) {
   if (user.id === state.user.id && field === "username") {
     updateSession({ username: next });
   }
-  saveDb();
+  await saveDb();
   toast("Utente aggiornato.");
   render();
 }

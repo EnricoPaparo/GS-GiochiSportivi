@@ -22,12 +22,12 @@ function defer(callback) {
 
 function replaceAttempts(nextAttempts) {
   db.attempts = nextAttempts;
-  persistDb(db);
+  return persistDb(db);
 }
 
 function replaceResults(nextResults) {
   db.results = nextResults;
-  persistDb(db);
+  return persistDb(db);
 }
 
 function findAttemptFromTarget(target) {
@@ -134,8 +134,8 @@ export function bindFirestoreResultsSyncHandlers(app, render) {
             loadRemoteAttempts(),
             loadRemoteResults()
           ]);
-          replaceAttempts(remoteAttempts);
-          replaceResults(remoteResults);
+          await replaceAttempts(remoteAttempts);
+          await replaceResults(remoteResults);
           toast("Risultati aggiornati da Firestore.");
           render();
         } catch (error) {

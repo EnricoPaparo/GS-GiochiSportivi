@@ -1,6 +1,6 @@
-// Copia questo file in firebaseConfig.js quando inizieremo l'integrazione Firebase reale.
+// Copia questo file in firebaseConfig.js per configurare l'integrazione Firebase reale.
 // Non committare valori sensibili non necessari. La config web Firebase non e una password,
-// ma teniamola separata finche l'app usa ancora localStorage.
+// ma teniamola separata dalla configurazione di esempio.
 
 export const firebaseConfig = {
   apiKey: "INSERISCI_API_KEY",

@@ -13,9 +13,9 @@ export function saveDb(db) {
   });
 }
 
-export function resetDb() {
+export async function resetDb() {
   const fresh = getDb();
-  saveDb(fresh);
+  await saveDb(fresh);
   return fresh;
 }
 

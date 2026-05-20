@@ -30,12 +30,12 @@ function defer(callback) {
 
 function replaceYears(nextYears) {
   db.years = nextYears;
-  persistDb(db);
+  return persistDb(db);
 }
 
 function replaceSections(nextSections) {
   db.sections = nextSections;
-  persistDb(db);
+  return persistDb(db);
 }
 
 export function bindFirestoreSchoolStructureSyncHandlers(app, render) {
@@ -138,7 +138,7 @@ export function bindFirestoreSchoolStructureSyncHandlers(app, render) {
         try {
           target.disabled = true;
           const remoteYears = await loadRemoteYears();
-          replaceYears(remoteYears);
+          await replaceYears(remoteYears);
           toast("Anni caricati da Firestore.");
           render();
         } catch (error) {
@@ -170,7 +170,7 @@ export function bindFirestoreSchoolStructureSyncHandlers(app, render) {
         try {
           target.disabled = true;
           const remoteSections = await loadRemoteSections();
-          replaceSections(remoteSections);
+          await replaceSections(remoteSections);
           toast("Sezioni caricate da Firestore.");
           render();
         } catch (error) {

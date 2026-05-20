@@ -1,8 +1,8 @@
 # Data Layer
 
-La persistenza attuale usa `localStorage` del browser e mantiene la stessa struttura dati gia usata dall'app.
+La persistenza applicativa attuale usa Firestore e mantiene la stessa struttura dati gia usata dall'app.
 
-`localStorageRepository.js` e l'unico file che accede direttamente a `localStorage`. Espone funzioni per caricare e salvare database e sessione:
+`repository.js` e l'API astratta usata dal resto dell'app. Espone funzioni per caricare e salvare il database applicativo e mantiene `localStorage` soltanto per la sessione di login:
 
 - `getDb()`
 - `saveDb(db)`
@@ -11,11 +11,11 @@ La persistenza attuale usa `localStorage` del browser e mantiene la stessa strut
 - `saveSession(session)`
 - `clearSession()`
 
-`repository.js` e l'API astratta usata dal resto dell'app. In futuro sara possibile creare un `firestoreRepository.js` con la stessa interfaccia e cambiare solo questo livello.
+`firestoreRepository.js` gestisce lettura e scrittura del documento remoto principale. I repository Firestore dedicati gestiscono le collection normalizzate usate per la sincronizzazione granulare.
 
 ## Struttura dati attuale
 
-Il database locale contiene array normalizzati:
+Il database applicativo contiene array normalizzati:
 
 - `users`
 - `sportsDays`
@@ -28,7 +28,7 @@ Il database locale contiene array normalizzati:
 - `attempts`
 - `rankings`
 
-## Collection Firestore suggerite
+## Collection Firestore
 
 - `users`
 - `sportsDays`

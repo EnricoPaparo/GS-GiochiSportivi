@@ -30,12 +30,12 @@ function defer(callback) {
 
 function replaceParticipants(nextParticipants) {
   db.participants = nextParticipants;
-  persistDb(db);
+  return persistDb(db);
 }
 
 function replaceRelayTeams(nextTeams) {
   db.relayTeams = nextTeams;
-  persistDb(db);
+  return persistDb(db);
 }
 
 export function bindFirestoreParticipantsSyncHandlers(app, render) {
@@ -138,7 +138,7 @@ export function bindFirestoreParticipantsSyncHandlers(app, render) {
         try {
           target.disabled = true;
           const remoteParticipants = await loadRemoteParticipants();
-          replaceParticipants(remoteParticipants);
+          await replaceParticipants(remoteParticipants);
           toast("Partecipanti caricati da Firestore.");
           render();
         } catch (error) {
@@ -170,7 +170,7 @@ export function bindFirestoreParticipantsSyncHandlers(app, render) {
         try {
           target.disabled = true;
           const remoteTeams = await loadRemoteRelayTeams();
-          replaceRelayTeams(remoteTeams);
+          await replaceRelayTeams(remoteTeams);
           toast("Squadre caricate da Firestore.");
           render();
         } catch (error) {

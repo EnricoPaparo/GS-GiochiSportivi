@@ -44,9 +44,8 @@ export async function loadRemoteDb() {
   return migrateDb(remoteDb);
 }
 
-// Interfaccia futura equivalente a localStorageRepository.js.
-// Non viene ancora usata da repository.js perché l'app oggi carica il DB in modo sincrono.
-// La migrazione completa richiederà un bootstrap async prima del render iniziale.
+// Low-level Firestore API used by the main repository.
+// The async bootstrap loads remote data before the first render.
 export function getDb() {
   throw new Error("firestoreRepository non e ancora il repository principale: usa loadRemoteDb() per il ripristino manuale");
 }
@@ -60,13 +59,13 @@ export function resetDb() {
 }
 
 export function getSession() {
-  throw new Error("Le sessioni restano gestite da localStorageRepository.js");
+  throw new Error("Le sessioni restano gestite dal repository principale");
 }
 
 export function saveSession() {
-  throw new Error("Le sessioni restano gestite da localStorageRepository.js");
+  throw new Error("Le sessioni restano gestite dal repository principale");
 }
 
 export function clearSession() {
-  throw new Error("Le sessioni restano gestite da localStorageRepository.js");
+  throw new Error("Le sessioni restano gestite dal repository principale");
 }

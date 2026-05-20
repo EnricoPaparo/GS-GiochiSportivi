@@ -8,7 +8,7 @@ import { getSection, getSections, getYears } from "./days.js";
 import { bestParticipantResult, getFinalResult, getTeamResult } from "./results.js";
 
 function saveDb() {
-  persistDb(db);
+  return persistDb(db);
 }
 
 export function statusLabel(status) {
@@ -221,5 +221,5 @@ export function persistRanking(sport, yearId, sex, rows, phase = null) {
     rows,
     updatedAt: new Date().toISOString()
   });
-  saveDb();
+  return saveDb();
 }

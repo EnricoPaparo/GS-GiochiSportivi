@@ -21,7 +21,7 @@ function replaceLocalDb(nextDb) {
   });
 
   Object.assign(db, nextDb);
-  persistDb(db);
+  return persistDb(db);
 }
 
 export function bindFirestoreBackupHandlers(app, render) {
@@ -54,7 +54,7 @@ export function bindFirestoreBackupHandlers(app, render) {
           return;
         }
 
-        replaceLocalDb(remoteDb);
+        await replaceLocalDb(remoteDb);
         state.view = "dashboard";
         state.dashboardSection = "days";
         state.selectedDayId = null;

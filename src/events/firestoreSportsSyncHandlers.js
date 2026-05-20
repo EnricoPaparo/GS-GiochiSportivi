@@ -25,7 +25,7 @@ function defer(callback) {
 
 function replaceSports(nextSports) {
   db.sports = nextSports;
-  persistDb(db);
+  return persistDb(db);
 }
 
 export function bindFirestoreSportsSyncHandlers(app, render) {
@@ -114,7 +114,7 @@ export function bindFirestoreSportsSyncHandlers(app, render) {
         try {
           target.disabled = true;
           const remoteSports = await loadRemoteSports();
-          replaceSports(remoteSports);
+          await replaceSports(remoteSports);
           state.view = "dashboard";
           state.dashboardSection = "days";
           toast("Sport caricati da Firestore.");
