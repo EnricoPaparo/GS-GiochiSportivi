@@ -3,7 +3,7 @@ import { db, state } from "../state.js";
 import { id } from "../utils/ids.js";
 
 function saveDb() {
-  persistDb(db);
+  return persistDb(db);
 }
 
 export function getAttempt(sportId, participantId, phase, attemptIndex) {
@@ -26,7 +26,7 @@ export function upsertAttempt({ sportId, participantId, phase, attemptIndex, sta
     if (status !== "value") attempt.value = "";
   }
   if (value !== undefined) attempt.value = value;
-  saveDb();
+  return saveDb();
 }
 
 export function getTeamResult(teamId) {
@@ -51,7 +51,7 @@ export function upsertTeamResult(teamId, patch) {
   }
   Object.assign(result, patch);
   if (result.status !== "value") result.value = "";
-  saveDb();
+  return saveDb();
 }
 
 export function getFinalResult(sportId, participantId) {
@@ -80,7 +80,7 @@ export function upsertFinalResult(sportId, participantId, patch) {
   }
   Object.assign(result, patch);
   if (result.status !== "value") result.value = "";
-  saveDb();
+  return saveDb();
 }
 
 export function bestParticipantResult(sport, participant, phase) {
