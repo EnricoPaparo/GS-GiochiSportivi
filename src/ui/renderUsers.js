@@ -9,6 +9,23 @@ export function renderUsersSection() {
     <section class="panel">
       <div class="section-head">
         <div>
+          <p class="eyebrow">Firestore</p>
+          <h2>Backup e ripristino cloud</h2>
+        </div>
+        <span class="role-pill">fase ponte</span>
+      </div>
+      <p class="muted" style="margin-top: 0;">
+        I dati live restano su questo dispositivo tramite localStorage. Usa questi comandi per salvare o ripristinare una copia completa su Firestore.
+      </p>
+      <div class="inline" style="margin-bottom: 18px;">
+        <button class="btn" type="button" data-action="backup-firestore">Backup su Firestore</button>
+        <button class="btn secondary" type="button" data-action="restore-firestore">Ripristina da Firestore</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <div>
           <p class="eyebrow">Utenze</p>
           <h2>Gestione utenti</h2>
         </div>
