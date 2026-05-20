@@ -7,8 +7,9 @@ export function getDb() {
 }
 
 export function saveDb(db) {
-  saveRemoteDb(db).catch((error) => {
+  return saveRemoteDb(db).catch((error) => {
     console.error("Firestore save failed.", error);
+    throw error;
   });
 }
 
