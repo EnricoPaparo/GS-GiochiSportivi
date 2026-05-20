@@ -120,8 +120,10 @@ if (action === "firebase-login") {
     const selectedSports = new FormData(form).getAll("sports").map(normalizeSportName);
     addDefaultSports(dayId, selectedSports);
     await saveDb();
-    state.selectedDayId = dayId;
-    state.view = "day";
+    state.selectedDayId = null;
+    state.selectedSportId = null;
+    state.dashboardSection = "days";
+    state.view = "dashboard";
     render();
   }
 
