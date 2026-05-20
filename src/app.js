@@ -5,11 +5,13 @@ import { bootstrapFirestoreFirstDb } from "./data/firestoreBootstrapRepository.j
 import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { bindFirestoreBackupHandlers } from "./events/firestoreBackupHandlers.js";
+import { bindRouteChange, restoreRouteFromUrl, syncRouteToUrl } from "./routing.js";
 import { state } from "./state.js";
 
 const app = document.querySelector("#app");
 function render() {
   renderUi(app);
+  syncRouteToUrl();
 }
 
 function renderBootstrapError() {
@@ -45,6 +47,7 @@ async function activateFirebaseSession(firebaseUser) {
     state.view = "dashboard";
   }
 
+  restoreRouteFromUrl();
   render();
 }
 
@@ -56,6 +59,7 @@ async function initializeApplication() {
   }
 
   restoreSession();
+  restoreRouteFromUrl();
 
   listenFirebaseAuth(async (firebaseUser) => {
     if (!firebaseUser) {
@@ -72,6 +76,7 @@ async function initializeApplication() {
 
   bindEventHandlers(app, render);
   bindFirestoreBackupHandlers(app, render);
+  bindRouteChange(render);
 
   render();
 }
