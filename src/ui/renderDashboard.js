@@ -24,8 +24,8 @@ function renderDashboardNav(activeSection) {
       <button class="nav-tile ${activeSection === "users" ? "active" : ""}" data-action="dashboard-section" data-section="users">
         <span class="tile-icon users-icon" aria-hidden="true"></span>
         <span>
-          <strong>Utenze</strong>
-          <small>Creazione, modifica e cancellazione utenti</small>
+          <strong>Strumenti admin</strong>
+          <small>Backup, restore e sincronizzazione Firestore</small>
         </span>
       </button>
     </section>
