@@ -1,8 +1,7 @@
 import { emptyDb } from "./schema.js";
 import { migrateDb } from "./migrations.js";
 import { loadRemoteDb } from "./firestoreRepository.js";
-import { recordEstimatedRead } from "./firebaseUsage.js";
-import { db, state } from "../state.js";
+import { db } from "../state.js";
 
 function replaceRuntimeDb(nextDb) {
   Object.keys(db).forEach((key) => {
@@ -18,8 +17,6 @@ export async function bootstrapFirestoreFirstDb() {
 
     if (!remoteDb) {
       replaceRuntimeDb(emptyDb());
-      recordEstimatedRead(db);
-      state.firebaseReadsThisSession += 1;
       return { source: "firestoreEmpty", loaded: false };
     }
 
@@ -35,8 +32,6 @@ export async function bootstrapFirestoreFirstDb() {
     };
 
     replaceRuntimeDb(nextDb);
-    recordEstimatedRead(db);
-    state.firebaseReadsThisSession += 1;
 
     return {
       source: "firestoreSnapshot",

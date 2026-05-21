@@ -1,7 +1,5 @@
 export const FIRESTORE_DAILY_QUOTAS = {
-  reads: 50000,
-  writes: 20000,
-  deletes: 20000
+  writes: 20000
 };
 
 function todayKey() {
@@ -14,28 +12,19 @@ export function ensureFirebaseUsage(targetDb) {
   if (current.date === todayKey()) {
     targetDb.meta.firebaseUsage = {
       date: current.date,
-      reads: Number(current.reads || 0),
-      writes: Number(current.writes || 0),
-      deletes: Number(current.deletes || 0)
+      writes: Number(current.writes || 0)
     };
     return targetDb.meta.firebaseUsage;
   }
 
   targetDb.meta.firebaseUsage = {
     date: todayKey(),
-    reads: 0,
-    writes: 0,
-    deletes: 0
+    writes: 0
   };
   return targetDb.meta.firebaseUsage;
 }
 
-export function recordEstimatedRead(targetDb) {
-  const usage = ensureFirebaseUsage(targetDb);
-  usage.reads += 1;
-}
-
-export function recordEstimatedWrite(targetDb) {
+export function recordFirestoreWrite(targetDb) {
   const usage = ensureFirebaseUsage(targetDb);
   usage.writes += 1;
   return () => {
@@ -43,13 +32,10 @@ export function recordEstimatedWrite(targetDb) {
   };
 }
 
-export function getFirebaseUsageSummary(targetDb, sessionReads = 0) {
+export function getFirebaseUsageSummary(targetDb) {
   const usage = ensureFirebaseUsage(targetDb);
   return {
-    reads: usage.reads,
     writes: usage.writes,
-    deletes: usage.deletes,
-    sessionReads,
     quotas: FIRESTORE_DAILY_QUOTAS
   };
 }

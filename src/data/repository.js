@@ -1,5 +1,5 @@
 import { saveRemoteDb } from "./firestoreRepository.js";
-import { recordEstimatedWrite } from "./firebaseUsage.js";
+import { recordFirestoreWrite } from "./firebaseUsage.js";
 import { migrateDb } from "./migrations.js";
 import { emptyDb, SESSION_KEY } from "./schema.js";
 
@@ -9,7 +9,7 @@ export function getDb() {
 }
 
 export function saveDb(db) {
-  const rollbackWrite = recordEstimatedWrite(db);
+  const rollbackWrite = recordFirestoreWrite(db);
   return saveRemoteDb(db).catch((error) => {
     rollbackWrite();
     console.error("Firestore save failed.", error);

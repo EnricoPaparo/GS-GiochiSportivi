@@ -27,7 +27,7 @@ Il database applicativo contiene array normalizzati:
 - `attempts`
 - `rankings`
 
-Il campo `users` puo esistere solo come array vuoto per compatibilita con snapshot storici. Le migrazioni lo svuotano e i salvataggi Firestore lo riscrivono sempre vuoto. Il flag `meta.guestsEnabled` controlla l'accesso ospite globale. Il nodo `meta.firebaseUsage` conserva una stima giornaliera interna delle operazioni mostrate all'amministratore senza aggiungere polling o letture extra.
+Il campo `users` puo esistere solo come array vuoto per compatibilita con snapshot storici. Le migrazioni lo svuotano e i salvataggi Firestore lo riscrivono sempre vuoto. Il flag `meta.guestsEnabled` controlla l'accesso ospite globale. Il nodo `meta.firebaseUsage` conserva il conteggio giornaliero delle scritture effettuate dall'app.
 
 ## Firestore
 

@@ -7,9 +7,7 @@ export function emptyDb() {
       guestsEnabled: true,
       firebaseUsage: {
         date: "",
-        reads: 0,
-        writes: 0,
-        deletes: 0
+        writes: 0
       }
     },
     users: [],

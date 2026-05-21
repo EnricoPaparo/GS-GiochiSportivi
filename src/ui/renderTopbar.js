@@ -3,32 +3,30 @@ import { getFirebaseUsageSummary } from "../data/firebaseUsage.js";
 import { db, state } from "../state.js";
 import { escapeHtml } from "../utils/html.js";
 
-function renderUsageRow(label, used, quota, note = "") {
+function renderUsageRow(label, used, quota) {
   const remaining = Math.max(quota - used, 0);
   return `
     <div class="usage-row">
       <span>${label}</span>
       <strong>${used}/${quota}</strong>
-      <small>Restano ${remaining}${note ? ` ${note}` : ""}</small>
+      <small>Restano ${remaining}</small>
     </div>
   `;
 }
 
 function renderAdminInfoPopover() {
-  const usage = getFirebaseUsageSummary(db, state.firebaseReadsThisSession);
+  const usage = getFirebaseUsageSummary(db);
   const guestsEnabled = db.meta?.guestsEnabled !== false;
   return `
     <div class="profile-popover admin-info-popover">
       <div class="profile-line">
         <span>Firebase</span>
-        <strong>Uso giornaliero stimato</strong>
+        <strong>Scritture giornaliere</strong>
       </div>
       <div class="usage-grid">
-        ${renderUsageRow("Letture", usage.reads, usage.quotas.reads, `(${usage.sessionReads} in questa sessione)`)}
         ${renderUsageRow("Scritture", usage.writes, usage.quotas.writes)}
-        ${renderUsageRow("Deletes", usage.deletes, usage.quotas.deletes)}
       </div>
-      <p class="fineprint">Stima interna senza letture extra. I valori ufficiali restano quelli della console Firebase.</p>
+      <p class="fineprint">Conta i salvataggi effettuati dall'app su Firestore.</p>
       <button class="btn ${guestsEnabled ? "danger" : "secondary"} tiny" data-action="toggle-guest-access">
         ${guestsEnabled ? "Blocca ospiti" : "Permetti ospiti"}
       </button>
