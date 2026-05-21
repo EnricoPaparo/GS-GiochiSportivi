@@ -66,6 +66,7 @@ export function computeSpeedQualificationRanking(sport, yearId, sex) {
 }
 
 export function computeStandardRanking(sport, yearId, sex) {
+  const isTimedSport = sport.name === "Resistenza";
   const rows = db.participants
     .filter((participant) => participant.dayId === state.selectedDayId && participant.sportId === sport.id && participant.yearId === yearId && participant.sex === sex)
     .map((participant) => {
@@ -78,7 +79,7 @@ export function computeStandardRanking(sport, yearId, sex) {
         status: best.status
       };
     });
-  return rankRows(rows, sport.name === "Velocita" ? "asc" : "desc", sport.name === "Velocita" ? "time" : "distance");
+  return rankRows(rows, isTimedSport ? "asc" : "desc", isTimedSport ? "time" : "distance");
 }
 
 export function computeRelayRanking(sport, yearId, sex) {

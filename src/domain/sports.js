@@ -1,6 +1,15 @@
 import { id } from "../utils/ids.js";
 import { db } from "../state.js";
 
+const SPORT_WIDGET_ORDER = {
+  Vortex: 1,
+  "Salto in lungo": 2,
+  Resistenza: 3,
+  "Velocita:qualifications": 4,
+  "Velocita:finals": 5,
+  Staffetta: 6
+};
+
 export function normalizeSportName(name) {
   return name === "Velocità" ? "Velocita" : name;
 }
@@ -20,17 +29,21 @@ export function getDaySportWidgets(sports) {
       { sport, label: "Velocita Qualifiche", phase: "qualifications" },
       { sport, label: "Velocita Finali", phase: "finals" }
     ];
+  }).sort((a, b) => {
+    const left = SPORT_WIDGET_ORDER[`${a.sport.name}:${a.phase}`] ?? SPORT_WIDGET_ORDER[a.sport.name] ?? 99;
+    const right = SPORT_WIDGET_ORDER[`${b.sport.name}:${b.phase}`] ?? SPORT_WIDGET_ORDER[b.sport.name] ?? 99;
+    return left - right;
   });
 }
 
 function getDefaultAttempts(sportName) {
   const normalizedName = normalizeSportName(sportName);
 
-  if (normalizedName === "Velocita" || normalizedName === "Staffetta") {
+  if (normalizedName === "Velocita" || normalizedName === "Staffetta" || normalizedName === "Resistenza") {
     return 1;
   }
 
-  if (normalizedName === "Salto in lungo" || normalizedName === "Vortex" || normalizedName === "Resistenza") {
+  if (normalizedName === "Salto in lungo" || normalizedName === "Vortex") {
     return 2;
   }
 

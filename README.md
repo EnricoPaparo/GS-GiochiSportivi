@@ -16,7 +16,7 @@ L'app usa Firebase Auth per l'accesso di amministratori e docenti, mentre gli sp
 - Creazione, modifica ed eliminazione delle giornate sportive per amministratori.
 - Configurazione di sport, prove, finalisti della velocita, anni e sezioni.
 - Gestione partecipanti per sport, anno, sezione e sesso.
-- Inserimento risultati inline per Vortex, Salto in lungo, Resistenza, Staffetta e Velocita.
+- Inserimento risultati inline per Vortex, Salto in lungo, Resistenza, Velocita e Staffetta.
 - Qualifiche e finali separate per la Velocita.
 - Classifiche automatiche con sezioni accorpate per anno e sesso.
 

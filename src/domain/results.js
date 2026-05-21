@@ -6,6 +6,10 @@ function saveDb() {
   return persistDb(db);
 }
 
+function isLowerValueBetter(sport) {
+  return sport.name === "Velocita" || sport.name === "Resistenza";
+}
+
 export function getAttempt(sportId, participantId, phase, attemptIndex) {
   return db.attempts.find((attempt) =>
     attempt.sportId === sportId &&
@@ -96,7 +100,7 @@ export function bestParticipantResult(sport, participant, phase) {
   const invalid = attempts.find((attempt) => attempt.status === "retired" || attempt.status === "disqualified") ||
     attempts.find((attempt) => attempt.status === "null");
   if (values.length) {
-    const value = sport.name === "Velocita" ? Math.min(...values) : Math.max(...values);
+    const value = isLowerValueBetter(sport) ? Math.min(...values) : Math.max(...values);
     return { value, status: "value" };
   }
   if (invalid) return { value: null, status: invalid.status };
