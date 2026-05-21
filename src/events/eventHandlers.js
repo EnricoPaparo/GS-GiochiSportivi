@@ -7,6 +7,7 @@ import { canAdmin, canEditResults, isGuest } from "../auth/permissions.js";
 import { cleanupDay, getDay, getSections, getYears } from "../domain/days.js";
 import { addDefaultSports, createSport, deleteSport, getSport, normalizeSportName } from "../domain/sports.js";
 import { upsertAttempt, upsertFinalResult, upsertTeamResult } from "../domain/results.js";
+import { printCurrentRanking } from "../ui/printRanking.js";
 import { getFirebaseUserProfile } from "../auth/firebaseUserService.js";
 import { loginWithEmailPassword, mapFirebaseUserToSession, logoutFirebaseUser } from "../auth/firebaseAuthService.js";
 export function bindEventHandlers(app, render) {
@@ -292,6 +293,10 @@ if (action === "logout") {
   if (action === "toggle-random") {
     state.randomOrder = !state.randomOrder;
     render();
+  }
+
+  if (action === "print-ranking" && canEditResults()) {
+    if (!printCurrentRanking()) toast("Stampa non disponibile. Controlla il blocco popup del browser.");
   }
 
   if (action === "scroll-relay-participants") {

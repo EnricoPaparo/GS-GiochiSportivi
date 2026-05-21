@@ -390,6 +390,14 @@ function renderRankings(sport) {
   const rows = computeRanking(sport, state.filters.yearId, state.filters.sex, rankingPhase);
   return `
     ${renderContextSelectors(false)}
+    ${canEditResults() ? `
+      <div class="rankings-toolbar">
+        <button class="btn secondary tiny print-btn" type="button" data-action="print-ranking" title="Stampa classifica">
+          <span class="printer-icon" aria-hidden="true"></span>
+          Stampa
+        </button>
+      </div>
+    ` : ""}
     <div class="table-wrap">
       <table>
         <thead>

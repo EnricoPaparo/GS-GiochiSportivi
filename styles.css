@@ -587,6 +587,47 @@ select:disabled {
   box-shadow: 0 0 16px rgba(0, 109, 255, 0.24);
 }
 
+.rankings-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.print-btn {
+  width: auto;
+}
+
+.printer-icon {
+  position: relative;
+  width: 18px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+}
+
+.printer-icon::before,
+.printer-icon::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  border: 2px solid currentColor;
+  background: currentColor;
+}
+
+.printer-icon::before {
+  top: -8px;
+  height: 7px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.printer-icon::after {
+  bottom: -7px;
+  height: 6px;
+  border-top: 0;
+}
+
 .section-standings-grid {
   display: grid;
   grid-auto-columns: minmax(340px, 1fr);
