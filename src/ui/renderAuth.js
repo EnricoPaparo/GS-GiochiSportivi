@@ -1,4 +1,7 @@
+import { db } from "../state.js";
+
 export function renderAuth() {
+  const guestsEnabled = db.meta?.guestsEnabled !== false;
   return `
     <main class="auth-page">
       <section class="auth-panel">
@@ -6,7 +9,7 @@ export function renderAuth() {
         <h1>Giornate sportive scolastiche</h1>
         <p>Gestisci prove, partecipanti, risultati e classifiche con accessi Firebase per amministratori, docenti e spettatori.</p>
         <div class="auth-actions">
-          <button class="btn secondary" data-action="guest-login">Accedi come spettatore</button>
+          <button class="btn secondary" data-action="guest-login" ${guestsEnabled ? "" : "disabled"}>${guestsEnabled ? "Accedi come spettatore" : "Ospiti disabilitati"}</button>
         </div>
       </section>
       <section class="auth-forms">

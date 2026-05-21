@@ -24,6 +24,7 @@ export function migrateDb(source) {
     merged.rankings = [];
   }
   merged.meta.participantsScopedBySport = true;
+  merged.meta.guestsEnabled = merged.meta.guestsEnabled !== false;
   merged.users = [];
   return merged;
 }

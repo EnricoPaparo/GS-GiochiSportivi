@@ -180,6 +180,10 @@ app.addEventListener("click", async (event) => {
   const { action } = target.dataset;
 
   if (action === "guest-login") {
+    if (db.meta?.guestsEnabled === false) {
+      toast("Accesso ospiti temporaneamente disabilitato.");
+      return;
+    }
     setSession({ id: "guest", username: "ospite", role: ROLES.GUEST });
     state.view = "dashboard";
     render();
@@ -218,6 +222,13 @@ if (action === "logout") {
 
   if (action === "toggle-create-day") {
     document.querySelector("#create-day-form")?.classList.toggle("hidden");
+  }
+
+  if (action === "toggle-guest-access" && canAdmin()) {
+    db.meta.guestsEnabled = db.meta?.guestsEnabled === false;
+    await saveDb();
+    toast(db.meta.guestsEnabled ? "Accesso ospiti riabilitato." : "Accesso ospiti sospeso.");
+    render();
   }
 
   if (action === "open-day") {

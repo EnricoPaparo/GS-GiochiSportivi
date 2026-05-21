@@ -3,7 +3,8 @@ export const SESSION_KEY = "giornateSportive.session.v1";
 export function emptyDb() {
   return {
     meta: {
-      participantsScopedBySport: true
+      participantsScopedBySport: true,
+      guestsEnabled: true
     },
     users: [],
     sportsDays: [],

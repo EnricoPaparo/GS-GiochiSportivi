@@ -12,6 +12,7 @@ L'app usa Firebase Auth per l'accesso di amministratori e docenti, mentre gli sp
 
 - Login Firebase, accesso spettatore e strumenti cloud per amministratori.
 - Ruoli `Administrator`, `Docente` e `Spettatore/Ospite`.
+- Controllo amministratore per sospendere o riabilitare l'accesso ospite.
 - Creazione, modifica ed eliminazione delle giornate sportive per amministratori.
 - Configurazione di sport, prove, finalisti della velocita, anni e sezioni.
 - Gestione partecipanti per sport, anno, sezione e sesso.

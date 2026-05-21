@@ -1,3 +1,4 @@
+import { ROLES } from "./constants.js";
 import { restoreSession, setSession } from "./auth/authService.js";
 import { listenFirebaseAuth, logoutFirebaseUser, mapFirebaseUserToSession } from "./auth/firebaseAuthService.js";
 import { getFirebaseUserProfile } from "./auth/firebaseUserService.js";
@@ -6,10 +7,24 @@ import { render as renderUi } from "./ui/render.js";
 import { bindEventHandlers } from "./events/eventHandlers.js";
 import { bindFirestoreBackupHandlers } from "./events/firestoreBackupHandlers.js";
 import { bindRouteChange, restoreRouteFromUrl, syncRouteToUrl } from "./routing.js";
-import { state } from "./state.js";
+import { db, state } from "./state.js";
 
 const app = document.querySelector("#app");
+
+function enforceGuestAccess() {
+  if (state.user?.role !== ROLES.GUEST || db.meta?.guestsEnabled !== false) return;
+
+  setSession(null);
+  state.view = "auth";
+  state.selectedDayId = null;
+  state.selectedSportId = null;
+  state.modalTeamId = null;
+  state.teamInfoId = null;
+  state.profileOpen = false;
+}
+
 function render() {
+  enforceGuestAccess();
   renderUi(app);
   syncRouteToUrl();
 }
