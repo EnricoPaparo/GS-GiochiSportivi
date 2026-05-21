@@ -4,7 +4,13 @@ export function emptyDb() {
   return {
     meta: {
       participantsScopedBySport: true,
-      guestsEnabled: true
+      guestsEnabled: true,
+      firebaseUsage: {
+        date: "",
+        reads: 0,
+        writes: 0,
+        deletes: 0
+      }
     },
     users: [],
     sportsDays: [],

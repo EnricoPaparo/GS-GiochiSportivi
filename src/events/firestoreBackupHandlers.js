@@ -1,6 +1,6 @@
 import { canAdmin } from "../auth/permissions.js";
 import { saveDb as persistDb } from "../data/repository.js";
-import { loadRemoteDb, saveRemoteDb } from "../data/firestoreRepository.js";
+import { loadRemoteDb } from "../data/firestoreRepository.js";
 import { db, state } from "../state.js";
 
 function toast(message) {
@@ -32,7 +32,7 @@ export function bindFirestoreBackupHandlers(app, render) {
     if (target.dataset.action === "backup-firestore") {
       try {
         target.disabled = true;
-        await saveRemoteDb(db, state.user);
+        await persistDb(db);
         toast("Backup Firestore completato.");
       } catch (error) {
         console.error(error);

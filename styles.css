@@ -202,6 +202,19 @@ select:disabled {
   border-radius: 12px 12px 5px 5px;
 }
 
+.info-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 900;
+  font-style: normal;
+  line-height: 1;
+}
+
 .profile-popover {
   position: absolute;
   top: calc(100% + 10px);
@@ -215,6 +228,10 @@ select:disabled {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+
+.admin-info-popover {
+  width: min(320px, calc(100vw - 24px));
 }
 
 .profile-line {
@@ -238,6 +255,37 @@ select:disabled {
 
 .profile-line strong {
   color: var(--ink);
+}
+
+.usage-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.usage-row {
+  display: grid;
+  grid-template-columns: minmax(82px, 1fr) auto;
+  gap: 2px 10px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8fbff;
+}
+
+.usage-row span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.usage-row strong {
+  color: var(--ink);
+}
+
+.usage-row small {
+  grid-column: 1 / -1;
+  color: var(--muted);
 }
 
 .container {

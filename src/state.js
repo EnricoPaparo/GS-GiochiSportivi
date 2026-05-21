@@ -11,6 +11,8 @@ export const state = {
   modalTeamId: null,
   teamInfoId: null,
   profileOpen: false,
+  adminInfoOpen: false,
+  firebaseReadsThisSession: 0,
   randomOrder: false,
   filters: {
     yearId: "",

@@ -1,5 +1,6 @@
 import { normalizePositiveInteger } from "../utils/numbers.js";
 import { emptyDb } from "./schema.js";
+import { ensureFirebaseUsage } from "./firebaseUsage.js";
 
 function normalizeSportNameForMigration(name) {
   return name === "VelocitÃ " ? "Velocita" : name;
@@ -25,6 +26,7 @@ export function migrateDb(source) {
   }
   merged.meta.participantsScopedBySport = true;
   merged.meta.guestsEnabled = merged.meta.guestsEnabled !== false;
+  ensureFirebaseUsage(merged);
   merged.users = [];
   return merged;
 }

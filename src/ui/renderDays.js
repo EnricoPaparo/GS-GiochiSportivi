@@ -9,7 +9,6 @@ import { getDayProgress } from "../domain/progress.js";
 
 export function renderDaysSection() {
   const days = [...db.sportsDays].sort(compareSportsDaysByDateDesc);
-  const guestsEnabled = db.meta?.guestsEnabled !== false;
   return `
     <section class="panel">
       <div class="section-head">
@@ -17,14 +16,7 @@ export function renderDaysSection() {
           <p class="eyebrow">Dashboard Giornate</p>
           <h2>Giornate sportive</h2>
         </div>
-        ${canAdmin() ? `
-          <div class="inline">
-            <button class="btn ${guestsEnabled ? "danger" : "secondary"}" data-action="toggle-guest-access">
-              ${guestsEnabled ? "Blocca ospiti" : "Permetti ospiti"}
-            </button>
-            <button class="btn" data-action="toggle-create-day">Nuova giornata</button>
-          </div>
-        ` : ""}
+        ${canAdmin() ? `<button class="btn" data-action="toggle-create-day">Nuova giornata</button>` : ""}
       </div>
       ${canAdmin() ? renderCreateDayForm() : ""}
       ${days.length ? `

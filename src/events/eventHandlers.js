@@ -191,6 +191,7 @@ app.addEventListener("click", async (event) => {
 
 if (action === "logout") {
   state.profileOpen = false;
+  state.adminInfoOpen = false;
 
   if (state.user?.provider === "firebase") {
     await logoutFirebaseUser();
@@ -206,17 +207,26 @@ if (action === "logout") {
     state.modalTeamId = null;
     state.teamInfoId = null;
     state.profileOpen = false;
+    state.adminInfoOpen = false;
     render();
   }
 
   if (action === "toggle-profile") {
     state.profileOpen = !state.profileOpen;
+    state.adminInfoOpen = false;
+    render();
+  }
+
+  if (action === "toggle-admin-info" && canAdmin()) {
+    state.adminInfoOpen = !state.adminInfoOpen;
+    state.profileOpen = false;
     render();
   }
 
   if (action === "dashboard-section" && canAdmin()) {
     state.dashboardSection = target.dataset.section;
     state.profileOpen = false;
+    state.adminInfoOpen = false;
     render();
   }
 
@@ -237,6 +247,7 @@ if (action === "logout") {
     state.modalTeamId = null;
     state.teamInfoId = null;
     state.profileOpen = false;
+    state.adminInfoOpen = false;
     resetFilters();
     render();
   }
@@ -246,6 +257,7 @@ if (action === "logout") {
     state.view = "day-edit";
     state.modalTeamId = null;
     state.teamInfoId = null;
+    state.adminInfoOpen = false;
     resetFilters();
     render();
   }
@@ -257,6 +269,7 @@ if (action === "logout") {
     state.speedPhase = target.dataset.speedPhase || "qualifications";
     state.modalTeamId = null;
     state.teamInfoId = null;
+    state.adminInfoOpen = false;
     resetFilters();
     render();
   }
@@ -265,6 +278,7 @@ if (action === "logout") {
     state.view = "day";
     state.modalTeamId = null;
     state.teamInfoId = null;
+    state.adminInfoOpen = false;
     render();
   }
 
