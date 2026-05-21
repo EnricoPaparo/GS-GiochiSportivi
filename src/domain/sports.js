@@ -30,7 +30,7 @@ function getDefaultAttempts(sportName) {
     return 1;
   }
 
-  if (normalizedName === "Salto in lungo" || normalizedName === "Vortex") {
+  if (normalizedName === "Salto in lungo" || normalizedName === "Vortex" || normalizedName === "Resistenza") {
     return 2;
   }
 

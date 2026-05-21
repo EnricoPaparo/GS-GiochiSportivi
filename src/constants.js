@@ -4,7 +4,7 @@ export const ROLES = {
   GUEST: "Spettatore/Ospite"
 };
 
-export const SPORTS = ["Vortex", "Salto in lungo", "Staffetta", "Velocita"];
+export const SPORTS = ["Vortex", "Salto in lungo", "Staffetta", "Velocita", "Resistenza"];
 
 export const SEXES = [
   { value: "M", label: "Maschi" },

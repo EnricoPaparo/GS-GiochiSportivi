@@ -12,7 +12,7 @@ import { computeRanking, getEffectiveSpeedFinalists } from "../domain/rankings.j
 const STANDARD_RESULT_STATES = RESULT_STATES.filter((stateItem) => stateItem.value !== "null");
 
 function resultStatesForAttempt(sport) {
-  return sport.name === "Vortex" || sport.name === "Salto in lungo"
+  return sport.name === "Vortex" || sport.name === "Salto in lungo" || sport.name === "Resistenza"
     ? RESULT_STATES
     : STANDARD_RESULT_STATES;
 }
